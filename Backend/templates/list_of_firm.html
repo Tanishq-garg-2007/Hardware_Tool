@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% set cur_page = 'list_firm' %}
+{% block main_body %}
+<table>
+    <caption>List of Extracted Firmwares</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Binwalk</th>
+        <th scope="col">Strings</th>
+      </tr>
+    </thead>
+    <tbody>
+        {% for i in files %}
+<tr>
+    <td>{{i}}</td>
+    <td><button><a href="/get_binwalk?file_name={{i}}">Binwalk Analysis</a></button></td>
+    <td><button><a href="/get_strings?file_name={{i}}">Get Strings</a></button></td>
+</tr>
+{% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

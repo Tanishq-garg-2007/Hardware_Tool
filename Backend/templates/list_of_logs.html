@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% set cur_page = 'list_logs' %}
+{% block main_body %}
+<table>
+    <caption>List of Extracted Logs</caption>
+    <thead>
+      <tr>
+        <th scope="col">Name</th>
+        <th scope="col">Raw</th>
+        <th scope="col">Analyze</th>
+      </tr>
+    </thead>
+    <tbody>
+        {% for i in files %}
+<tr>
+    <td>{{i}}</td>
+    <td><button><a href="/show_raw_boot_logs?log_name={{i}}">Raw Dump</a></button></td>
+    <td><button><a href="/boot_log_analyse?file_name={{i}}">Analyze</a></button></td>
+</tr>
+{% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

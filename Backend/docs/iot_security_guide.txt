@@ -1,0 +1,269 @@
+# IoT Security Research Lab — Hardware Auditing & Security Analysis Guide
+# IIIT Allahabad (C3i Hub / ECE Department)
+# Technical Manual & System Knowledge Base for IoT Assistant RAG Engine
+
+================================================================================
+1. EXECUTIVE OVERVIEW & SYSTEM ARCHITECTURE
+================================================================================
+The IoT Security Hardware Auditing Platform is an enterprise-grade hardware penetration testing and firmware analysis framework developed by the IoT Security Research Lab at IIIT Allahabad.
+
+The system empowers security researchers, embedded engineers, and penetration testers to perform end-to-end hardware vulnerability assessments on commercial and industrial IoT equipment, including IP cameras, smart routers, industrial PLCs, smart home hubs, and automotive ECUs.
+
+The architecture comprises:
+1. Physical Hardware Interface Layer: Raspberry Pi GPIO, SPI bus, UART transceivers, Relay switching modules, and high-speed Optocoupler (OCTOCOPLOR) boards.
+2. Backend Engine (FastAPI): Orchestrates serial communication, GPIO pulse generation, flash extraction, binary deconstruction, CVE matching, and local AI reasoning.
+3. RAG & Vector Intelligence Layer: ChromaDB vector database with Ollama embeddings (nomic-embed-text) and local LLMs (Qwen 3.5 0.8B / LFM 2.5 Thinking 1.2B) for intelligent log summarization and security assistance.
+4. Modern Web UI (Next.js & Material-UI): Interactive dashboard providing real-time log viewers, automated firmware inspection dashboards, and hardware test panels.
+
+================================================================================
+2. HARDWARE PINOUTS & ELECTRICAL CONNECTIONS
+================================================================================
+
+A. Raspberry Pi 5 / 4 GPIO Pin Configuration:
+- Switching Pin (Power Control): BCM GPIO 6 (Physical Pin 31)
+- Channel Selection Pin: BCM GPIO 26 (Physical Pin 37)
+- Voltage Control Pin: BCM GPIO 20 (Physical Pin 38)
+- Relay Control Pin: BCM GPIO 21 (Physical Pin 40)
+- UART TX Pin (Host Transmit -> Target Receive): BCM GPIO 14 (Physical Pin 8)
+- UART RX Pin (Host Receive <- Target Transmit): BCM GPIO 15 (Physical Pin 10)
+- SPI0 MOSI: BCM GPIO 10 (Physical Pin 19)
+- SPI0 MISO: BCM GPIO 9 (Physical Pin 21)
+- SPI0 SCLK: BCM GPIO 11 (Physical Pin 23)
+- SPI0 CE0 (Chip Select): BCM GPIO 8 (Physical Pin 24)
+- Common Ground (GND): Physical Pin 6 / 9 / 14 / 20 / 25 / 30 / 34 / 39
+
+B. Level Shifter Requirements:
+- Target boards often operate at 1.8V, 2.5V, 3.3V, or 5.0V.
+- Raspberry Pi GPIO pins are strictly 3.3V tolerant.
+- CAUTION: Always verify voltage levels with a digital multimeter before connecting UART or SPI lines. Use bidirectional level shifters (e.g., TXB0108 or BSS138 based) when auditing 1.8V or 5V targets to prevent permanent damage to the host Pi.
+
+================================================================================
+3. HARDWARE MODES: RELAY MODE vs. OCTOCOPLOR MODE
+================================================================================
+
+The platform provides two dedicated hardware control architectures designed for different auditing requirements:
+
+A. RELAY MODE (Legacy Mechanical Switching)
+- Hardware Architecture: Uses electromagnetic relay coils (active LOW or active HIGH) to switch power and signals.
+- Physical Characteristics:
+  * Switching Latency: 5 ms to 15 ms (mechanical movement of relay armature).
+  * Contact Bouncing: Exhibits electrical contact bounce during state transitions (typically 1 ms to 3 ms of ringing).
+  * Isolation: High galvanic isolation for high-voltage circuits.
+- Best Use Cases:
+  * Standard board power cycling and reboots.
+  * Capturing continuous boot logs where microsecond timing is not required.
+  * Legacy test setups and baseline benchmark comparisons.
+- Included Tools in Relay Mode:
+  1. Voltage Glitcher (Legacy relay pulse triggering)
+  2. Detect Baudrate (Standard autobaud detection)
+  3. Check For UART Console (Standard shell probing)
+  4. Capture Boot Logs (Serial recording)
+  5. Analyze Boot Logs (Rule-based boot log extraction)
+
+B. OCTOCOPLOR MODE (Advanced Solid-State Optocoupler Switching)
+- Hardware Architecture: Uses high-speed optoisolators (phototransistors / optocouplers) and MOSFET drivers.
+- Physical Characteristics:
+  * Switching Latency: Less than 1 microsecond (pure solid-state optical-to-semiconductor transition).
+  * Contact Bouncing: ZERO contact bounce. Produces clean, crisp square-wave pulses.
+  * Electrical Protection: Optical isolation barrier prevents voltage surges from propagating back into the Raspberry Pi host.
+- Best Use Cases:
+  * Microsecond-level voltage glitching and clock/power fault injection.
+  * Precise U-Boot autoboot countdown interruption.
+  * Advanced UART timing analysis and high-baud serial synchronization.
+- Included Tools in OCTOCOPLOR Mode:
+  1. New Voltage Glitcher (Microsecond precision power-drop glitching)
+  2. New Check for UART Analysis (Interactive asynchronous console analysis)
+  3. New Detect Baudrate (High-precision frequency and pulse-width sampling)
+  4. New Capture BootLog (Structured boot output streaming with ANSI strip)
+  5. New Analyze Boot Logs (Deep heuristic tagging and CVE indicator correlation)
+
+================================================================================
+4. MASTER HARDWARE AUDITING PROTOCOL (RECOMMENDED STEP-BY-STEP ORDER)
+================================================================================
+
+When auditing a new target device, execute tasks in the following strict chronological order:
+
+--------------------------------------------------------------------------------
+PHASE 1: VISUAL INSPECTION & PHYSICAL INTERFACING
+--------------------------------------------------------------------------------
+1. Open the device casing and inspect the printed circuit board (PCB).
+2. Look for test points, unpopulated 4-pin headers (likely UART: VCC, GND, TX, RX), and 8-pin SOIC chips (SPI Flash).
+3. Connect Target Ground (GND) to Host Ground (GND).
+4. Connect Target TX to Host RX, and Target RX to Host TX.
+5. If extracting SPI Flash directly, connect an 8-pin SOIC test clip over the flash memory chip.
+
+--------------------------------------------------------------------------------
+PHASE 2: BAUDRATE IDENTIFICATION (DETECT BAUDRATE)
+--------------------------------------------------------------------------------
+- Tool: "Detect Baudrate" (Relay Mode) or "New Detect Baudrate" (OCTOCOPLOR Mode).
+- Purpose: Identifies the UART serial communication frequency.
+- How It Works: The backend samples the serial port across common IoT baud rates:
+  * 115200 (Most common on modern ARM / MIPS Linux IoT devices)
+  * 57600 (Common on industrial controllers and older routers)
+  * 38400 (Common on specific microcontrollers and GPS modules)
+  * 19200 / 9600 (Common on sensor nodes and legacy serial controllers)
+- It evaluates incoming bytes for printable ASCII ratios and valid newline delimiters (`\r\n`).
+- Outcome: Confirms the correct baud rate before capturing logs.
+
+--------------------------------------------------------------------------------
+PHASE 3: BOOT LOG CAPTURE (CAPTURE BOOT LOGS)
+--------------------------------------------------------------------------------
+- Tool: "Capture Boot Logs" or "New Capture BootLog".
+- Purpose: Records raw serial output from the instant the device is powered on.
+- How It Works:
+  1. Host activates power switching pin (GPIO 6 / 21) to power-cycle the target.
+  2. The serial stream captures initial First Stage Boot Loader (FSBL / ROM), U-Boot / Barebox / RedBoot bootloader, Kernel decompressor, and Linux systemd / sysvinit startup logs.
+  3. The log stream is recorded and saved to `/uart_logs/uart_boot_log`.
+
+--------------------------------------------------------------------------------
+PHASE 4: BOOT LOG SECURITY ANALYSIS & SYSTEM FINGERPRINTING
+--------------------------------------------------------------------------------
+- Tool: "Analyze Boot Logs" & "/summarize_bootlog".
+- Purpose: Extracts critical hardware specifications and identifies security misconfigurations from the boot logs.
+- Extracted Parameters:
+  * SoC / Silicon Architecture: ARM Cortex, MIPS 24Kc/34Kc, RISC-V, x86.
+  * Linux Kernel Version: E.g., 2.6.36, 3.10.14, 4.9.241, 5.10.x.
+  * Kernel Command Line (`bootargs`): E.g., `console=ttyS0,115200 root=/dev/mtdblock2 rootfstype=squashfs init=/bin/sh`.
+  * Memory Layout & Partition Table: MTD partitions (`mtd0: u-boot`, `mtd1: kernel`, `mtd2: rootfs`).
+  * Mounted Filesystems: SquashFS, JFFS2, UBIFS, Ext4, CramFS.
+  * Subsystem Warnings & Panics: Kernel oops, memory allocation failures, driver timeout errors.
+
+--------------------------------------------------------------------------------
+PHASE 5: UART CONSOLE PROBING & ROOT SHELL ACCESS
+--------------------------------------------------------------------------------
+- Tool: "Check For UART Console" or "New Check for UART Analysis".
+- Purpose: Determines if an unauthenticated interactive shell (BusyBox / bash) is exposed on the UART port.
+- Probing Process:
+  * Sends Carriage Return (`\r\n`) and inspects the response.
+  * Looks for shell prompts (`#`, `$`, `~ #`, `login:`).
+  * Executes non-destructive discovery commands: `id`, `whoami`, `uname -a`, `cat /proc/version`.
+- If a login prompt is returned:
+  * Launch "Bruteforce UART" to test common IoT credentials:
+    - `root:root`, `root:admin`, `root:toor`, `root:123456`, `root:default`, `root:password`
+    - `admin:admin`, `admin:password`, `admin:1234`, `user:user`, `support:support`.
+
+--------------------------------------------------------------------------------
+PHASE 6: VOLTAGE GLITCHING (FAULT INJECTION)
+--------------------------------------------------------------------------------
+- Tool: "Voltage Glitcher" (Relay) or "New Voltage Glitcher" (OCTOCOPLOR).
+- Purpose: Bypasses password protections, secure boot integrity checks, or drops into U-Boot recovery shell when the console is locked.
+- How It Works:
+  1. The target device is booted while monitoring the UART serial stream.
+  2. When the target reaches the autoboot countdown (e.g. "Hit any key to stop autoboot: 3... 2... 1..."), or a secure signature check loop, a brief voltage glitch pulse (low voltage drop for 50 microseconds to 200 milliseconds) is applied to the CPU VCC or memory rail.
+  3. The sudden drop in voltage corrupts register reads (e.g., changing a conditional branch `BNE` to `NOP` or corrupting the counter variable).
+  4. The bootloader drops directly into an unrestricted U-Boot prompt (`=>`).
+  5. From the U-Boot prompt, researchers can:
+     * Dump RAM: `md.b 0x80000000 0x1000`
+     * Modify bootargs to gain root: `setenv bootargs console=ttyS0,115200 init=/bin/sh; bootm`
+     * Read arbitrary flash addresses: `sf probe; sf read 0x82000000 0x0 0x1000000`.
+
+--------------------------------------------------------------------------------
+PHASE 7: SPI FLASH EXTRACTION (HARDWARE DUMP)
+--------------------------------------------------------------------------------
+- Tool: "SPI Tools".
+- Purpose: Directly extracts the binary contents of the onboard SPI Flash memory without requiring a functional UART console.
+- Parameters in SPI Tools:
+  * SPI Speed: E.g., `20000` (20 MHz) or `8000` (8 MHz for noisy connections).
+  * Chip Part Number: Selected from supported Flashrom chips (e.g., `W25Q128FV`, `MX25L6405D`, `GD25Q64`).
+  * File Name: Output destination (e.g., `extracted_firm/device_dump.bin`).
+  * Power Control: Toggle Raspberry Pi 3.3V power or external Bench PSU.
+- Underlying Execution: Executes `sudo flashrom -p linux_spi:dev=/dev/spidev0.0,spispeed=<speed> -c <chip> -r <filename>`.
+
+--------------------------------------------------------------------------------
+PHASE 8: FIRMWARE EXTRACTION & FILESYSTEM DECONSTRUCTION
+--------------------------------------------------------------------------------
+- Tool: "Firmware Analysis".
+- Purpose: Unpacks extracted raw `.bin` or downloaded firmware image files.
+- Underlying Technology:
+  * Executes `binwalk -e -M` to recursively carve headers and unpack compressed filesystems.
+  * Supports:
+    - SquashFS (Little Endian / Big Endian, LZMA, XZ, GZIP compression).
+    - CramFS (Compressed ROM filesystem).
+    - JFFS2 / YAFFS / UBIFS (Raw NAND/NOR flash filesystems).
+    - U-Boot uImage / Linux kernel zImage.
+- Outcome: Extracts the full root filesystem tree (`/bin`, `/sbin`, `/etc`, `/lib`, `/usr`, `/var`).
+
+--------------------------------------------------------------------------------
+PHASE 9: FILE ANALYSIS & LOG INTELLIGENCE (RAG CHATBOT)
+--------------------------------------------------------------------------------
+- Tool: "File Analysis".
+- Purpose: Enables AI-driven file inspection and keyword searches across extracted configs and logs.
+- How It Works:
+  1. Merges selected files into `combined_files_output.txt`.
+  2. Embeds text chunks using `nomic-embed-text` into ChromaDB vectorstore.
+  3. Researcher can ask natural language questions (e.g., "What are the hardcoded IP addresses?", "Where are the web server configuration files?", "Show me user accounts in /etc/passwd").
+
+--------------------------------------------------------------------------------
+PHASE 10: COMPLETE 9-TIER COMPLIANCE & SECURITY AUDIT
+--------------------------------------------------------------------------------
+- Tool: "Complete Analysis".
+- Provides an automated 9-tier compliance inspection of firmware binary strings:
+  1. Firmware Identification: Identifies firmware vendor, device model, release version, and build timestamp.
+  2. Package & Artifacts: Computes SHA-256 hashes, detects filesystem formats, compression signatures, and download URLs.
+  3. OS & Architecture: Classifies OS type (Linux, FreeRTOS, VxWorks, ThreadX), CPU target, endianness, standard C library (glibc, uClibc, musl), and init system.
+  4. Secure Boot Declaration: Identifies presence of cryptographic boot verification, RSA/ECC public key anchors, and hardware root of trust (TPM / eFuse / OTP).
+  5. Network Services & Protocols: Scans binary strings for listening daemon signatures: HTTP, HTTPS, SSH, Telnet, UPnP, MQTT, CoAP, RTSP, SNMP, and default open port declarations.
+  6. Remote Access & Cloud Hooks: Identifies AWS IoT Core, Azure IoT Hub, Tuya, Alibaba Cloud endpoints, and remote telemetry URLs.
+  7. Update & Patching Logic: Audits Over-The-Air (OTA) update endpoints, firmware decryption keys, signature verification logic, and anti-rollback checks.
+  8. Reverse Engineering Indicators: Evaluates symbol stripping (`strip`), code obfuscation, UPX packing, and proprietary encryption wrappers.
+  9. SBOM & Vulnerability Discovery: Generates a Software Bill of Materials (SBOM) listing open-source components (e.g., OpenSSL 1.0.2, BusyBox 1.20, dnsmasq 2.76) and maps them to known Common Vulnerabilities and Exposures (CVEs).
+
+--------------------------------------------------------------------------------
+PHASE 11: HARDCODED PASSWORDS & CREDENTIAL AUDITING
+--------------------------------------------------------------------------------
+- Tool: "Hardcoded Passwords".
+- Scans extracted firmware rootfs for critical secrets:
+  * `/etc/passwd` and `/etc/shadow` entries (MD5 `$1$`, SHA-256 `$5$`, SHA-512 `$6$` hashes).
+  * Hardcoded private keys: `id_rsa`, `server.key`, `private.pem`.
+  * API tokens and cloud secrets: AWS access keys, JWT secret keys, OAuth tokens.
+  * Hardcoded backdoor accounts in startup scripts (`/etc/init.d/`, `/etc/rc.local`).
+  * Hardcoded Wi-Fi credentials (SSID & WPA2 PSKs).
+
+--------------------------------------------------------------------------------
+PHASE 12: CVE VULNERABILITY SCANNING & EPSS/CVSS QUANTITATIVE SCORING
+--------------------------------------------------------------------------------
+- Tool: "CVE Scanner" + "EPSS / CVSS Scoring".
+- Purpose: Cross-references discovered software versions against NIST NVD and real-world exploit prediction databases.
+- Risk Metrics Computed:
+  * CVSS v3.1 Base Score: Measures severity (Low: 0.1-3.9, Medium: 4.0-6.9, High: 7.0-8.9, Critical: 9.0-10.0).
+  * EPSS Score (Exploit Prediction Scoring System): Predicts the statistical probability (0.0 to 1.0) that a vulnerability will be actively exploited in the wild over the next 30 days.
+  * Quantitative Prioritization: Allows security teams to patch the most weaponizable vulnerabilities first.
+
+================================================================================
+5. PRACTICAL REAL-WORLD AUDITING SCENARIOS
+================================================================================
+
+SCENARIO 1: AUDITING A SMART IP CAMERA WITH LOCKED UART
+- Step 1: Connect UART pins to Raspberry Pi. Run "Detect Baudrate" -> Identifies `115200`.
+- Step 2: Run "Capture Boot Logs". Power cycle camera.
+- Step 3: Observe boot log. Notice boot countdown: `Hit any key to stop autoboot: 3`. Then device boots into a password-protected login prompt: `Camera login:`.
+- Step 4: Run "Voltage Glitcher" (OCTOCOPLOR Mode). Configure glitch offset at 2.85 seconds after power-on with 100ms pulse.
+- Step 5: Glitch triggers. Target drops into U-Boot prompt (`hisilicon #`).
+- Step 6: In U-Boot, execute `printenv`. Modify bootargs: `setenv bootargs mem=64M console=ttyAMA0,115200 root=/dev/mtdblock2 rootfstype=squashfs init=/bin/sh; bootm 0x82000000`.
+- Step 7: Linux kernel boots directly into a root shell `#` without asking for password.
+
+SCENARIO 2: SMART PLUG WITH NO SERIAL PINS (SPI DUMP ONLY)
+- Step 1: No UART pins available on PCB. Locate 8-pin Winbond SOIC flash chip (`W25Q32FV`).
+- Step 2: Attach SOIC-8 test clip connected to `/dev/spidev0.0`.
+- Step 3: Open "SPI Tools". Select speed `20000` kHz, chip `W25Q32FV`, filename `smart_plug.bin`.
+- Step 4: Click Extract Firmware. Flashrom dumps 4MB binary dump.
+- Step 5: Open "Firmware Analysis". Upload `smart_plug.bin`. Binwalk carves out SquashFS partition.
+- Step 6: Run "Hardcoded Passwords". Scanner discovers hardcoded Telnet password `smart123` in `/etc/shadow` and factory cloud token in `/etc/config.json`.
+
+================================================================================
+6. TROUBLESHOOTING & FREQUENTLY ASKED QUESTIONS (FAQ)
+================================================================================
+
+Q1: Why do I see random characters / garbage text on UART?
+A: 1. Baud rate mismatch. Re-run "Detect Baudrate".
+   2. Missing common ground. Ensure GND of Raspberry Pi and target are firmly connected.
+   3. Voltage mismatch (e.g. target is 1.8V and Pi is 3.3V). Use a level shifter.
+
+Q2: Why does `RPi.GPIO` fail on my Windows PC?
+A: `RPi.GPIO` relies on Linux kernel memory mapping (`sys/mman.h`) and only runs on real Raspberry Pi hardware. For Windows development, the backend automatically uses `MockGPIO` so you can test all API endpoints and UI features locally.
+
+Q3: What are the best Ollama models for Raspberry Pi 5?
+A: For fast CPU inference on Raspberry Pi 5 (4GB/8GB RAM):
+   - `nomic-embed-text`: Fast vector embeddings for ChromaDB.
+   - `qwen3.5:0.8b` / `qwen2.5-coder:0.5b`: Ultra-fast multi-chunk firmware analysis and interactive chat.
+   - `lfm2.5-thinking:1.2b`: High-quality reasoning for boot log error diagnostics.

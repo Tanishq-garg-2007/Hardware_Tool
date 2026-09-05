@@ -1,0 +1,140 @@
+Searching in dum_extracted/squashfs_out directory.
+
+Searching for IP addresses...
+
+
+ Searching for important binaries... 
+
+######################## ssh
+######################## sshd
+######################## scp
+######################## sftp
+######################## tftp
+######################## dropbear
+######################## busybox
+######################## telnet
+######################## telnetd
+######################## openssl
+
+ Searching for Database file... 
+
+######################## *.db
+######################## *.sqlite
+######################## *.sqlite3
+
+ Searching for system configuration files... 
+
+######################## *.conf
+######################## *.cfg
+######################## *.ini
+
+ Searching for passwords... 
+
+######################## passwd
+######################## shadow
+######################## *.psk
+
+ Searching for files... 
+
+######################## upgrade
+######################## admin
+######################## root
+######################## password
+######################## passwd
+######################## pwd
+######################## dropbear
+######################## ssl
+######################## private key
+######################## telnet
+######################## secret
+######################## pgp
+######################## gpg
+######################## token
+######################## api key
+######################## oauth
+
+ Searching for ssh files... 
+
+######################## authorized_keys
+######################## *authorized_keys*
+######################## host_key
+######################## *host_key*
+######################## id_rsa
+######################## *id_rsa*
+######################## id_dsa
+######################## *id_dsa*
+######################## *.pub
+
+ Searching for ssl files... 
+
+######################## *.crt
+######################## *.pem
+######################## *.cer
+######################## *.p7b
+######################## *.p12
+######################## *.key
+
+ Searching for webserveres... 
+
+######################## apache
+######################## lighttpd
+######################## alphapd
+######################## httpd
+
+ Searching for shell scripts... 
+
+
+ Searching for .bin files... 
+
+
+ Searching for email addresses... 
+
+Searching for urls... 
+
+
+ Searching for default credentials... 
+
+######################## default_user
+######################## default_password
+######################## default_credentials
+######################## user:password
+
+ Searching for hardcoded sensitive information... 
+
+######################## api_key
+######################## secret_key
+######################## access_token
+######################## private_key
+
+ Searching for insecure services... 
+
+######################## telnet
+######################## ftp
+######################## http
+
+ Searching for misconfigurations... 
+
+
+Identifying file signatures... 
+
+
+Identifying third-party libraries in ELF files...
+
+
+Identifying dangerous functions in ELF files...
+
+
+Searching for hardcoded SSH keys...
+
+
+Searching for command injection vulnerabilities in web interfaces...
+
+
+Searching for outdated or weak cryptographic algorithms...
+
+
+Checking for weak or predictable encryption keys...
+
+
+Searching for Default Credentials in System Binaries
+

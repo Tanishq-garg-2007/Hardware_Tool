@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Week 1</title>
+  </head>
+  <body>
+	<h2>
+        Objective (5/12/21)
+        </h2>
+        create a web server hosted on Pi that can control a power supply.
+        <h3>Justification</h3>
+        to perform voltage glitching, essentially allowing pi to turn off or on the target device to make target device boot into a unsafe state.
+        <a href="https://www.youtube.com/watch?v=_E0PWQvW-14">Hacking apple airtag with voltage glitching</a>
+        <h3>Steps : </h3>
+
+<ol>
+  <li>Making circuit based on lm317( Variable power supply) [Done] </li>
+  <li>Making the controlling interface on pi          [Done]</li>             
+  <li>Exposing that control on a webpage hosted by pi [Done]</li>
+</ol>  
+<h2>Update on step 1</h2>
+in this, we demonstrated a Variable power supply which can be controlled via Pi to preform undervolting and over volting. The potentiometer which is getting changed manually,
+will be replaced by a voltage controlled resistor. (will change once i aquire the correct part)
+<br>
+<br>
+
+<iframe id="ytplayer" type="text/html" width="640" height="360"
+src="https://www.youtube.com/embed/utD6p8Zd5wo"
+frameborder="13"></iframe>
+<br>
+
+<h2>Update on step 2 and 3</h2>
+in this, the led blinks in pattern. by controlling power supply, we could turn off and on the LED such that you would only see only one color.
+this demonstrate the ability to preciously by a web server hosted on PI. Which will be used in breaking the boot process.
+<br>
+<br>
+ 
+
+<iframe id="ytplayer" type="text/html" width="640" height="360"
+  src="https://www.youtube.com/embed/zvswOfXzRu0"
+  frameborder="13"></iframe>
+
+
+  </body>
+</html>

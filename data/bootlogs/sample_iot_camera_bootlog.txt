@@ -1,0 +1,23 @@
+U-Boot 2019.07 (Oct 15 2019 - 14:22:10 +0000) Allwinner Technology
+
+CPU:   ARMv7 Processor rev 5 (v7l)
+SoC:   Allwinner H3 (sun8i)
+Model: IoT-Security-Cam Pro v2.1
+Board: Sunxi H3 DevBoard
+DRAM:  512 MiB
+MMC:   SUNXI SD/MMC: 0, SUNXI SD/MMC: 1
+SF: Detected W25Q128BV with page size 256 Bytes, erase size 64 KiB, total 16 MiB
+Net:   eth0: ethernet@01c30000
+Loading Environment from SPIFlash... OK
+Hit any key to stop autoboot:  0 
+
+## Booting kernel from FIT Image at 42000000 ...
+   Using hash subimage 'kernel'
+   Linux version 4.4.180 (root@build-host) (gcc version 7.3.0) #1 SMP PREEMPT
+   SquashFS version 4.0
+   Init Drivers: gpio, spi-sunxi, sunxi-mmc, sunxi-wdt, crypto-engine
+   Kern Subsys: wifi, bluetooth, sound
+   rootfstype=squashfs root=/dev/mtdblock3 ro
+   Starting devd daemon...
+   Starting sshd on port 22...
+   IoT Camera Service ready.

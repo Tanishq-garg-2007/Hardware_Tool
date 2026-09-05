@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rpi X-tractor</title>
+
+    <link rel="stylesheet" href= "{{ url_for('static',filename='styles/mainpage.css') }}">
+
+</head>
+<body>
+    <header>
+        <div class="topnav">
+            <a href="/">Home</a>
+            <a href="#">Voltage Glitcher</a>
+            <a href="/spi.html">SPI Flash Extractor</a>
+            <a  class="active" href="/analysis.html">Analyse</a>
+        </div>
+    </header>
+    <main>
+        <h3>Summary of analysis : </h3>
+        <div class="di_t">
+        <table class="de_table" style="margin: auto;">
+            <tr>
+                <th>Byte Offset</th>
+                <th>Description</th>
+            </tr>
+        {% for i,j in info['summary'].items() %}
+        <tr><td>{{i}}</td><td>{{j}}</td></tr>
+        {% endfor %}
+    </table>
+</div>
+<h3>Detailed analysis : </h3>
+<div class="di_t">
+<table class="de_table" style="margin: auto;">
+    <tr>
+        <th>Byte Offset</th>
+        <th>Description</th>
+    </tr>
+{% for i,j in info['detailed'].items() %}
+<tr><td>{{i}}</td><td>{{j}}</td></tr>
+{% endfor %}
+</table>
+</div>
+    </main>
+    <footer>
+
+
+    </footer>
+</body>
+
+</html>

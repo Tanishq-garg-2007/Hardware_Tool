@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% set cur_page = 'spi' %}
+
+{% block main_body %}
+    <script>
+        const chk_btn = async () => {
+            var text = document.getElementById("probe_result");
+            var speed = document.getElementById("spi_speed_select").value;
+            const response = await fetch('/list_devices?speed=' + speed);
+            const myText = await response.text();
+            text.style.display = "block";
+            text.innerHTML = myText
+        }
+        const get_firm = async () => {
+            var text = document.getElementById("extract_result");
+            var filename = document.getElementById("filename_box");
+            console.log(filename.value)
+            const response = await fetch('/dump_firm?filename=' + filename.value);
+            const myText = await response.json();
+            text.style.visibility = "visible";
+            text.innerText = myText["data"]
+            if (myText["data"] == "success") {
+                filename.disabled = true
+                var dwn_btn = document.getElementById("after_extract_btn");
+                dwn_btn.style.display = "block";
+                var main_dwn = document.getElementById("download_firm_btn")
+                var analysis_link = document.getElementById("analysis_link")
+                analysis_link.href = `/get_binwalk?file_name=${filename.value}.bin`
+                var red_url = `/download_firm?filename=${filename.value}`;
+                console.log(red_url)
+                main_dwn.onclick = function () {
+                    location.href = red_url;
+                };
+            }
+        }
+        function chk_click() {
+            var checkBox = document.getElementById("volt_chk_id");
+            var text = document.getElementById("volt_input_id");
+            if (checkBox.checked == true) {
+                text.style.display = "block";
+            } else {
+                text.style.display = "none";
+            }
+        }
+
+        const volt_set = async () => {
+            var volt = document.getElementById("volt_input_id1").value;
+            const response = await fetch('/set_volt?speed=' + volt);
+            console.log(response.text)
+        }
+        const board_pw = async () => {
+            // api to turn off psu
+            var PSU_area = document.getElementById("volt_input_id");
+            var volt = document.getElementById("volt_input_id1").value;
+            const response = await fetch('/set_volt?speed=' + volt);
+            PSU_area.style.display = "none";
+            console.log(response.text)
+        }
+        function download_firm() {
+            var fname = document.getElementById("filename_box").value;
+            url = "/download_firm?filename=" + fname;
+
+        }
+    </script>
+    <h1>SPI flash Extractor</h1>
+    <div id="main_options">
+        <fieldset>
+            <legend>Power Option</legend>
+            <input type="radio" name="volt_chk" id="volt_chk_id" onclick="chk_click()"><label for="volt_chk_id">PSU
+                Power</label> <br>
+            <div id="volt_input_id" style="display: none;">
+                <input type="text" name="volt_input" id="volt_input_id1">
+                <input type="button" value="Set Voltage" id="volt_btn" onclick="volt_set()">
+            </div>
+            <input type="radio" name="volt_chk" id="volt_chk_id1" onclick="board_pw()"> <label>PI Power</label>
+
+        </fieldset>
+        <label for="spi_speed_select">
+            <br>SPI Speed : <input type="text" placeholder="Default is set to 4096" name="speed_select"
+                id="spi_speed_select">
+            <input id="check_spi_btn" type="button" onclick="chk_btn()" value="Probe Attached flash">
+        </label>
+        <p id="probe_result" style="display: none;"></p>
+        <br><label for="filename_box">file name : <input type="text" name="filename" id="filename_box"></label>
+        <p id="extract_result" style="visibility: hidden;"></p>
+
+        <input type="button" onclick="get_firm()" value="Extract Firmware" id="final_button">
+        <div style="display: none;" id="after_extract_btn">
+            <input type="button" value="Download Firmware"
+                id="download_firm_btn">
+                <a id="analysis_link" href="">Analyze Firm</a>
+                <!-- <input type="button"
+                value="Analyse firmware"> -->
+            </div>
+    </div>
+
+{% endblock %}

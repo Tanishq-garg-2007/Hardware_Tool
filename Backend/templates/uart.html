@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% set cur_page = 'uart' %}
+{% block main_body %}
+<script>
+    function showForm(event){
+        console.log(event)
+        var form = document.getElementById(event)
+        console.log(form.style.display);
+        if (form.style.display == "block"){
+            form.style.display = "none";
+        }else{
+            form.style.display = "block";
+        }
+    }
+</script>
+    <main>
+    <div class="uart_options">
+
+        <button id="self_test" onclick="showForm('self_test')"> self Test</button>
+        <div id="self_test" class="none">
+            <form action="/self_test">
+                <label for="sampling_rate">Sample Time</label>
+                <input type="text" name="sampling_rate" id="sampling_rate">
+                <label for="power_cycle_delay">Reboot Delay</label>
+                <input type="text" name="power_cycle_delay" id="power_cycle_delay">
+                <input type="submit">
+            </form>
+        </div>
+
+
+        <button id="detect_baudrate" onclick="showForm('detect_baudrate_form')">Detect Baudrate</button>
+        <div id="detect_baudrate_form" class="none">
+            <form action="/detect_baudrate">
+     
+                <label for="sampling_rate">Sample Time</label>
+                <input type="text" name="sampling_rate" id="sampling_rate">
+                <label for="power_cycle_delay">Reboot Delay</label>
+                <input type="text" name="power_cycle_delay" id="power_cycle_delay">
+                <input type="submit">
+            </form>
+        </div>
+        <button onclick="showForm('check_uart_console')">Check for UART console</button>
+        <div id="check_uart_console" class="none">
+            <form action="/check_uart_console" method="get">
+                <label for="baud_rate">Baudrate </label>
+                <input type="text" name="baud_rate" id="baud_rate">
+                <input type="submit">
+            </form>
+        </div>
+        <button onclick="showForm('capture_boot_logs')">Capture Boot logs</button>
+        <div id="capture_boot_logs" class="none">
+            <form action="/capture_boot_logs">
+                <label for="baud_rate">Baudrate </label>
+                <input type="text" name="baud_rate" id="baud_rate">
+                <label for="sampling_rate">Sample Time</label>
+                <input type="text" name="sampling_rate" id="sampling_rate">
+                <label for="power_cycle_delay">Reboot Delay</label>
+                <input type="text" name="power_cycle_delay" id="power_cycle_delay">
+                <input type="submit">
+            </form>
+        </div>
+        <button><a href="/boot_log_analyse?file_name=uart_boot_log">Analyze Boot logs</a></button>
+        <button><a href="/show_raw_boot_logs">Raw Boot logs</a></button>
+
+    </div>
+
+    </main>
+    <footer>
+
+
+    </footer>
+
+    {% endblock %}

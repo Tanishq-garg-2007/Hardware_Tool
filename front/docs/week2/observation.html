@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Week 2 observations</title>
+  </head>
+  <body>
+<h2>Some observations</h2>
+1. Dlink using flash chip only for webserver componants. <br>
+after extracting the firmware directly from router and comparing it with the firmware downloaded from internet, it can be seen that firmware directly from chip does not have the root filesystem 
+it only has the files from the webUI. This could be because the main firmware reside in some other part of the circuit.<br>
+<img src="bin_out.png"  width="512" height="756"><br>
+2. In d link, additional componants draw power when extracting firmware with SPI protocol. If the drawn current is greater than 30mA than rpi will not be able to supply the power to chip<br>
+this is a good example of why a variable power supply is needed for the tool.<br>
+here you can see the light is drawing unnecessary power which can cause trouble. So using additional power supply is recommanded. <br>
+<img src="light_dlink.png"  width="512" height="512">
+<br>
+  </body>
+</html>

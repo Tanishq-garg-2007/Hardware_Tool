@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rpi X-tractor</title>
+    <link rel="stylesheet" href= "{{ url_for('static',filename='styles/mainpage.css') }}">
+</head>
+{% set nav_items = [
+    ('/', 'home', 'Home'),
+    ('/voltage-module.html', 'voltage-module', 'Voltage Glitcher'),
+    ('/spi.html', 'spi', 'SPI Flash Extractor'),
+    ('/uart.html', 'uart', 'UART Hacking'),
+    ('/list_firm.html', 'list_firm', 'Extracted Firmwares'),
+    ('/list_logs.html', 'list_logs', 'Extracted Logs'),
+    ] %}
+
+
+<body>
+    <header>
+        <div class="topnav">
+            {% for link, id, name in nav_items %}
+            <a {% if cur_page == id %}class="active"{% endif %} href="{{ link }}">{{ name }}</a>
+            {% endfor %}
+        </div>
+    </header>
+    <main>
+    {% block main_body %}test{% endblock %}
+    </main>
+    <footer>
+
+
+    </footer>
+</body>
+
+</html>

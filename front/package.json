@@ -1,0 +1,35 @@
+{
+  "name": "hardware-auditing-tool",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^5.11.0",
+    "@mui/material": "^5.16.7",
+    "axios": "^1.5.0",
+    "bard-ai": "^2.0.3",
+    "bard-ai-google": "^1.2.1",
+    "dotenv": "^16.3.1",
+    "fs": "0.0.1-security",
+    "next": "^14.2.15",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-highlight-words": "^0.20.0"
+  },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "eslint-config-next": "14.2.5"
+  }
+}

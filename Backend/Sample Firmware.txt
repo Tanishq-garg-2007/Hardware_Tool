@@ -1,0 +1,16 @@
+^@^@^@^BP^@^@^@^@^@^@^@^A^@^@^@^@^@^@^@^L^@^@^@^@
+[Header: HG-X100_v1.4.2_PROD]
+/usr/bin/login
+http://update.homeguard-iot.net/v1/check
+admin:password123
+ARMv7 Processor rev 1 (v7l)
+Linux version 5.10.24-rt (gcc version 10.2.1)
+squashfs magic bytes 0x73717368 at offset 0x004c2e0
+eth0: 192.168.1.1
+U-Boot 2021.01-rc2 (Jan 15 2026 - 14:30:00)
+BusyBox v1.33.1 (2021-02-04 11:30:00 UTC) multi-call binary
+SSH-2.0-dropbear_2020.81
+...[Garbage Binary Data]...
+/etc/shadow
+/etc/passwd
+[Signature: RSA-4096-SHA256]

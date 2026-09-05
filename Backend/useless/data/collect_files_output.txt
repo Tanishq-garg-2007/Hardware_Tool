@@ -1,0 +1,21 @@
+file start
+test_lab/script.py
+print('This is a test script')
+x = 10file end
+
+file start
+test_lab/note.txt
+Hello! This is a root level text file.
+Line 2.file end
+
+file start
+test_lab/data/config.ini
+[Settings]
+theme=dark
+version=1.0file end
+
+file start
+test_lab/subfolder/info.log
+2024-05-20: System started.
+2024-05-20: All systems green.file end
+

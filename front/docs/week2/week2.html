@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Week 2</title>
+  </head>
+  <body>
+	<h2>
+        Objective
+        </h2>
+        Experiment with SPI Flash and add the functionality of reading and downloading the firmware from IoT device.
+        <h3>Justification</h3>
+        Most of the electronic devices like routers, IoT device, multimedia player or even fridge and washing machine needs a chip to store the firmware so to say. Generally in common
+        devices the firmware is stored separately, ie. not in the main memory of microcontroller or processor. This is to ensure that firmware could be updated safely and also because of price factor.
+        The preffered choice to store firmware is a additional chip known as flash (there are many type and protocol). They are much easy to target.
+        <br> The type we are targetting is SPI flash which is very common in routers and motherboard bios chips.
+        <h3>Steps : </h3>
+
+<ol>
+  <li>aquire parts and target device (Done) </li>
+  <li>perform firmware extraction on at least 5 device to gather insights (2 devices done)</li>             
+  <li>Implement front end for the extration process to automate the task (pending)</li>
+  <li>offer binwalk like basic analysis to end user direclty from webpage <a href="binwalk_output.png">like this.</a> (work in progress) </li>
+  <li>Direct download option and extracted download option for the firmware (doing debugging in this need 1 more day) </li>
+</ol>  
+<h2>Update on step 1</h2>
+Got two devices to Experiment with SPI protocol. <br>
+1. Dlink 2730U ADSL Router + Modem <br>
+2. A Random Chinese motherboard <br>
+<img src="2730U.jpg"  width="512" height="512"><br>
+<img src="china_mb.jpg"  width="512" height="512"><br>
+<br>
+<h2>Update on step 2 </h2>
+<iframe id="ytplayer" type="text/html" width="640" height="360"
+src="https://www.youtube.com/embed/2NokkYLjOJg"
+frameborder="13"></iframe>
+<br>
+<h2>Some observations </h2>
+1. Dlink using flash chip only for webserver componants. <br>
+2. In d link, additional componants draw power when extracting firmware with SPI protocol. If the drawn current is greater than 30mA than rpi will not be able to supply the power to chip<br>
+this is a good example of why a variable power supply is needed for the tool.
+<br>
+<a href="observation.html">Link to observations with screenshots</a>
+  </body>
+</html>

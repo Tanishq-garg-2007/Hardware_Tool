@@ -1,0 +1,149 @@
+import struct
+import os
+import time
+
+firmware_text = """
+================================================================================
+CyberCore Technologies - SecureIoT Gateway X900 Firmware Image
+================================================================================
+
+[FIRMWARE IDENTIFICATION]
+Device Name: SecureIoT Gateway X900
+Model: GW-X900-PRO-V3
+Firmware Version: v3.4.12-rc2
+Build Date: 2026-03-15T09:30:00Z
+Build Commit: git-hash-8f4b2a9e1d
+Vendor: CyberCore Technologies Inc.
+Target Hardware Revision: Rev-B Production
+Firmware Type: Production Release (Hardened)
+
+[PACKAGE & ARTIFACTS]
+Image Format: Unified Multi-Part Firmware (FIT + SquashFS rootfs)
+SHA-256 Checksum: 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069
+MD5 Checksum: e4d909c290d0fb1ca068ffaddf22cbd0
+Filesystem Type: squashfs 4.0
+Compression: LZMA (Block size: 131072 bytes)
+Secondary Partition: cramfs ro /dev/mtdblock4
+Download Endpoint: https://firmware-repo.cybercore-iot.internal/v3.4.12/update.bin
+Cloud Staging URL: https://s3.us-east-1.amazonaws.com/cybercore-firmware-assets/GW-X900/firmware.bin
+
+[OS & ARCHITECTURE]
+Operating System: Linux 5.15.74-rt54 SMP PREEMPT RT
+Kernel Release: 5.15.74-cybercore-arm64
+CPU Architecture: ARM Cortex-A72 (ARMv8-A 64-bit aarch64)
+Endianness: Little Endian (LSB)
+C Library: glibc 2.33 (GNU libc with NPTL support)
+Init System: systemd v247 / BusyBox v1.34.1 multi-call binary
+Platform: Broadcom BCM2712 / BCM2711 Quad-Core SoC
+
+[SECURE BOOT DECLARATION]
+Secure Boot Status: ENABLED (Cryptographic Signature Verification Active)
+Boot Stages: ROM Bootloader -> U-Boot SPL 2023.04 -> ATF BL31 -> Linux Kernel zImage
+Signature Algorithm: RSA-4096 with SHA-256 (PKCS#1 v1.5 padding)
+Public Key Hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+Key Storage: Microchip ATECC608A Hardware Secure Element (eFuse OTP Lockout)
+Fail Mode: Hardware Secure Lockout (Tamper detection blows fuse on 3 failed attempts)
+U-Boot Flags: boot_auth=strict verify=yes fail_action=panic
+
+[NETWORK PROTOCOLS & SERVICES]
+Supported Protocols: HTTP/1.1, HTTPS (TLS 1.3), MQTT over TLS (8883), RTSP, CoAP, DNS
+Active Daemons & Services:
+  - dropbear SSH server v2022.82 listening on port 22/tcp
+  - lighttpd/1.4.67 web administration console listening on port 80/tcp and 443/tcp
+  - mosquitto MQTT broker listening on port 8883/tcp (mTLS required)
+  - telnetd legacy debugging server listening on port 23/tcp (WARNING: Insecure service enabled)
+  - rtsp-streamer daemon listening on port 554/tcp
+Hardcoded Default Credentials:
+  - root:CyberCoreAdmin2026!
+  - admin:admin1234
+  - support:Support@IoT900#
+
+[REMOTE ACCESS & CLOUD]
+Cloud Integration: AWS IoT Core & Tuya Smart Cloud Gateway
+Primary MQTT Endpoint: a3k8910xyz-ats.iot.us-east-1.amazonaws.com:8883
+Shadow Sync API: https://api.cybercore-cloud.com/v2/telemetry/device
+Remote Access Surfaces: WebUI Admin Dashboard, Local REST API (/api/v1/system/status), SSH CLI
+Remote Management: gRPC Remote Agent on port 9090
+RCE Attack Surface: Unauthenticated CGI script /cgi-bin/system_diagnostic.cgi accepting ping arguments
+
+[UPDATE & PATCH DECLARATION]
+Update Method: Dual-Bank A/B Partition Dual Boot (RAUC Framework)
+Update Mechanism: Over-The-Air (OTA) HTTPS background polling
+Verification Policy: Mandatory GPG signature verification (Key ID: 0x9B81C4F2)
+Anti-Rollback Protection: Hardware Monotonic Version Counter (Must be >= version 3)
+Recovery Policy: Automatic watchdog rollback to Bank B Golden Image if boot fails within 60s
+
+[REVERSE ENGINEERING INDICATORS]
+Symbol Stripping: NO (Debug symbols and DWARF info retained in /usr/lib/libcustom_sensor.so)
+Binary Packing / Obfuscation: Unpacked standard ELF 64-bit LSB (No UPX packing detected)
+Disassembly Ease: High (Clean function boundaries, readable symbol table)
+Proprietary Cryptography: libcustom_cipher.so contains custom XOR rotating-key obfuscation algorithm
+Debug Flags: CONFIG_DEBUG_INFO=y, CONFIG_GDB_SCRIPTS=y
+
+[SOFTWARE BILL OF MATERIALS (SBOM) & VULNERABILITIES]
+SBOM Standard: SPDX 2.3 JSON Specification Embedded
+Inventory of Components:
+  - OpenSSL 1.1.1k (Affected by CVE-2021-3711, CVE-2021-3712) - License: OpenSSL/SSLeay
+  - BusyBox v1.34.1 (Affected by CVE-2021-42374, CVE-2021-42376) - License: GPLv2
+  - Dropbear SSH v2022.82 - License: MIT
+  - lighttpd 1.4.67 - License: Revised BSD
+  - dnsmasq 2.85 (Affected by CVE-2021-3448) - License: GPLv2
+  - libcurl 7.79.1 - License: MIT/X
+  - Mosquitto 2.0.14 - License: EPL-2.0 / EDL-1.0
+Security Contact: security-alerts@cybercore-technologies.com
+Vulnerability Disclosure URL: https://security.cybercore-technologies.com/advisories/GW-X900
+Security Advisory Hotline: +1-800-555-0199
+"""
+
+def generate_test_files():
+    base_dir = r"c:\Users\tanis\OneDrive\Documents\IOT SECURITY\Hardware\data"
+    os.makedirs(base_dir, exist_ok=True)
+
+    # 1. Generate text version for quick inspection and bootlog testing
+    txt_path = os.path.join(base_dir, "dummy_firmware_complete_test.txt")
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(firmware_text.strip())
+    print(f"Generated text test file: {txt_path} ({os.path.getsize(txt_path)} bytes)")
+
+    # 2. Generate binary (.bin) version with realistic magic bytes
+    # - Starts with U-Boot image header magic (0x27051956)
+    # - Followed by ELF header magic (\x7fELF)
+    # - Embedded with SquashFS magic (hsqs)
+    # - Followed by full printable ASCII metadata
+    bin_path = os.path.join(base_dir, "dummy_firmware_complete_test.bin")
+    with open(bin_path, "wb") as f:
+        # 64-byte U-Boot header mock
+        uboot_header = struct.pack(
+            ">IIIIIIIBBBB",
+            0x27051956,          # ih_magic
+            0x12345678,          # ih_hcrc
+            int(time.time()),    # ih_time
+            len(firmware_text),  # ih_size
+            0x40008000,          # ih_load
+            0x40008000,          # ih_ep
+            0x87654321,          # ih_dcrc
+            2,                   # ih_os (Linux)
+            2,                   # ih_arch (ARM)
+            2,                   # ih_type (Kernel)
+            1                    # ih_comp (gzip)
+        )
+        f.write(uboot_header)
+        f.write(b"\x00" * 32)
+
+        # ELF Header snippet (64-bit ARM)
+        elf_header = b"\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00"
+        f.write(elf_header)
+
+        # SquashFS magic block
+        f.write(b"hsqs\x00\x01\x00\x00")
+
+        # Full firmware strings
+        f.write(firmware_text.encode("utf-8"))
+
+        # Trailing padding
+        f.write(b"\x00" * 256)
+
+    print(f"Generated binary test file: {bin_path} ({os.path.getsize(bin_path)} bytes)")
+
+if __name__ == "__main__":
+    generate_test_files()

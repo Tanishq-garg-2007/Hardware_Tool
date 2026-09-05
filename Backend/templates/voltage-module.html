@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% set cur_page = "voltage-module" %}
+
+{% block main_body %}
+
+<div class="voltage_set_container">
+<form action="/set_volt" style="margin-top: 100px;">
+    <label for="freq">Frequency</label>
+    <input type="text" name="freq" id="freq">
+    <input type="submit">
+</form>
+</div>
+
+<div class="voltage_set_container">
+    <form action="/set_channel" style="margin-top: 100px;">
+        <label for="channel">Channel</label>
+        <input type="text" name="channel" id="channel">
+        <input type="submit">
+    </form>
+    </div>
+
+<div class="voltage_set_container">
+    <form action="/set_volt_custom" style="margin-top: 100px;">
+        <label for="pon">Power on time</label>
+        <input type="text" name="pon" id="pon">
+        <label for="channel">Power off time</label>
+        <input type="text" name="poff" id="poff">
+        <input type="submit">
+    </form>
+    </div>
+
+<div class="power_btn">
+    <a href="/switch_power/0"><button>Turn off power</button></a>
+    <a href="/switch_power/1"><button>Turn on power</button></a>
+
+</div>
+{% endblock %}

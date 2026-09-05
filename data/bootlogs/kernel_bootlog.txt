@@ -1,0 +1,293 @@
+3917 ASIC rom secure boot code (v2.0)
+ddr pll init OK
+nor flash secure boot
+NOTICE:  Booting Trusted Firmware
+NOTICE:  BL1: v2.3():V2.0_TO-3-g4ae38097
+NOTICE:  BL1: Built : 13:39:47, Mar  7 2022
+INFO:    BL1: RAM 0x19004000 - 0x1900f000
+INFO:    Using crypto library 'mbed TLS'
+INFO:    BL1: Loading BL2
+INFO:    Using FIP in nor flash mode
+INFO:    Loading image id=6 at address 0x80040000
+INFO:    nor flash security mode
+INFO:    Image id=6 loaded: 0x404ec98 - 0x404f107
+INFO:    Using FIP in nor flash mode
+INFO:    Loading image id=1 at address 0x404ec98
+INFO:    nor flash security mode
+INFO:    Image id=1 loaded: 0x4000088 - 0x404ec98
+NOTICE:  BL1: Booting BL2
+INFO:    Entry point address = 0x4000088
+INFO:    SPSR = 0x1d3
+
+
+U-Boot 2020.04 (Aug 27 2025 - 09:54:23 +0800)
+
+Board: IPCAM RTS3917
+CPU:   ARM Cortex-A @ 800M
+DRAM:  64 MiB @ 1200 MHz
+
+memory dont need repair
+memory dont need repair
+flash lock: changed status reg 0x0 to 0x1c
+disable quad mode
+flash status is 1c, 2, 0
+SF: Detected W25Q128FV with page size 256 Bytes, erase size 64 KiB, total 16 MiB
+MMC:   timeout:10000
+timeout:10000
+timeout:10000
+Card did not respond to voltage select!
+rtsmmc: 0
+Loading Environment from SPI Flash... *** Warning - bad CRC, using default environment
+
+## Checking for 'FDT'/'FDT Image' at 81f58e80
+   Using 'config-1' configuration
+   Verifying Hash Integrity ... OK
+   Data Start:   0x81f58f34
+   Verifying Hash Integrity ... sha256,rsa2048:verity_key1- OK
+CACHE: Misaligned operation at range [81f58f34, 81f5e234]
+CACHE: Misaligned operation at range [81f58f34, 81f5e240]
+CACHE: Misaligned operation at range [81f58f34, 81f5e240]
+In:    serial
+Out:   serial
+Err:   serial
+Hit any key to stop autoboot:  0 
+=> printenv bootargs
+## Error: "bootargs" not defined
+=> printenv           
+addmisc=setenv bootargs ${bootargs} console=ttyS0,${baudrate} panic=1
+baudrate=115200
+bootcmd=cpsdupdate;bootm ${kernel_offset} - ${dtb_addr}
+bootdelay=2
+bootfile=/vmlinux.elf
+dfu_alt_info=0 ram 0x80400000 0x400000
+dfu_bufsiz=0x400000
+dtb_addr=81f58f34
+fdt_high=0xffffffff
+fdtcontroladdr=8284a7c8
+kernel_offset=60000
+load=tftp 80500000 ${u-boot}
+stderr=serial
+stdin=serial
+stdout=serial
+
+Environment size: 388/131068 bytes
+=> bootargs
+Unknown command 'bootargs' - try 'help'
+=> setenv bootargs 'console=ttyS1,57600 init=/bin/sh earlyprintk psci=enable root=/dev/mtdblock4 rootfstype=squashfs user_debug=31'
+=> boot
+flash lock: changed status reg 0x0 to 0x1c
+disable quad mode
+flash status is 1c, 2, 0
+SF: Detected W25Q128FV with page size 256 Bytes, erase size 64 KiB, total 16 MiB
+flash unlock: changed status reg 0x1c to 0x0
+envgetweak
+getenvweak
+otacommandline: console=ttyS1,57600 init=/bin/sh earlyprintk psci=enable root=/dev/mtdblock4 rootfstype=squashfs user_debug=31
+otabakpaddr:0x0
+timeout:10000
+timeout:10000
+timeout:10000
+Card did not respond to voltage select!
+Error, mout fatfs failed, error num: 3
+img_addr = 0x60000
+## Loading kernel from FIT Image at 80400000 ...
+   Using 'config-1' configuration
+   Verifying Hash Integrity ... OK
+   Trying 'kernel-1' kernel subimage
+     Description:  Linux kernel
+     Created:      2025-10-09   7:54:59 UTC
+     Type:         Kernel Image
+     Compression:  uncompressed
+     Data Start:   0x804000c0
+     Data Size:    3088416 Bytes = 2.9 MiB
+     Architecture: ARM
+     OS:           Linux
+     Load Address: 0x81000000
+     Entry Point:  0x81000000
+     Sign algo:    sha256,rsa2048:verity_key1
+     Sign value:   b164d4c818c529698ffb72a8f97cd63b324a6c1e8f3dc387726e553c8cb571b4ca71ee7cbb4a300ba9807ece3ad7428bf7efe751766a5fb6a866f632f3c7c6bb237b14a1d75733dea3611be2458e9fe382b4f11db9e6dc3aff0b38499d5030cbab8ac4530e22242c9ea1eb7b5d0da316cc4d765617874a3f70e53b5ebc8fb551c6031a67b3a8308c4f4da557ddfae3d790a0e7b00ff6e2c98507de1612fc84aa13d99295205ac685344f1950157fc78b8b220509ae691fcf77f828925c172a2ea0d9babd19e620f4df3d437684a7e827ff993b4c3a360077c379592ecc1892818f2eae0c8df7e43fb77fd420d1714b0daf25ab7b9d1bdca0a4ae5cc871f3dc99
+     Timestamp:    unavailable
+   Verifying Hash Integrity ... sha256,rsa2048:verity_key1- OK
+## Flattened Device Tree blob at 81f58f34
+   Booting using the fdt blob at 0x81f58f34
+   Loading Kernel Image
+OK
+   Using Device Tree in place at 81f58f34, end 81f611f9
+
+Starting kernel ...
+
+Uncompressing Linux... done, booting the kernel.
+[    0.000000] Booting Linux on physical CPU 0x0
+[    0.000000] Linux version 5.4.289 (ubuntu@b345f2750365) (gcc version 10.3.1 20220117 (Realtek ASDK-10.3.1 Build 3678)) #21 PREEMPT Thu Sep 4 09:57:01 CST 2025
+[    0.000000] CPU: ARMv7 Processor [410fc075] revision 5 (ARMv7), cr=10c53c7d
+[    0.000000] CPU: div instructions available: patching division code
+[    0.000000] CPU: PIPT / VIPT nonaliasing data cache, VIPT aliasing instruction cache
+[    0.000000] OF: fdt: Machine model: RTS3917N EVB
+[    0.000000] printk: bootconsole [earlycon0] enabled
+[    0.000000] Memory policy: Data cache writeback
+[    0.000000] Reserved memory: created DMA memory pool at 0x83fc0000, size 0 MiB
+[    0.000000] OF: reserved mem: initialized node audiomem, compatible id shared-dma-pool
+[    0.000000] Reserved memory: created CMA memory pool at 0x83800000, size 4 MiB
+[    0.000000] OF: reserved mem: initialized node fbmem, compatible id shared-dma-pool
+[    0.000000] CPU: All CPU(s) started in SVC mode.
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 16192
+[    0.000000] Kernel command line: console=ttyS1,57600 init=/bin/sh earlyprintk psci=enable root=/dev/mtdblock4 rootfstype=squashfs user_debug=31
+[    0.000000] Dentry cache hash table entries: 8192 (order: 3, 32768 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 4096 (order: 2, 16384 bytes, linear)
+[    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
+[    0.000000] Memory: 33160K/65280K available (5120K kernel code, 225K rwdata, 812K rodata, 2048K init, 213K bss, 28024K reserved, 4096K cma-reserved)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] 	Tasks RCU enabled.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] NR_IRQS: 256
+[    0.000000] arch_timer: cp15 timer(s) running at 25.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x5c40939b5, max_idle_ns: 440795202646 ns
+[    0.000008] sched_clock: 56 bits at 25MHz, resolution 40ns, wraps every 4398046511100ns
+[    0.015985] Switching to timer-based delay loop, resolution 40ns
+[    0.028370] Console: colour dummy device 80x30
+[    0.037306] Calibrating delay loop (skipped), value calculated using timer frequency.. 50.00 BogoMIPS (lpj=100000)
+[    0.057985] CPU: Testing write buffer coherency: ok
+[    0.067829] pid_max: default: 32768 minimum: 301
+[    0.077438] Mount-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.092060] Mountpoint-cache hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.109871] Setting up static identity map for 0x80500000 - 0x80500060
+[    0.123134] rcu: Hierarchical SRCU implementation.
+[    0.133331] devtmpfs: initialized
+[    0.147657] VFP support v0.3: implementor 41 architecture 2 part 30 variant 7 rev 5
+[    0.163461] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.182977] futex hash table entries: 256 (order: -1, 3072 bytes, linear)
+[    0.196792] pinctrl core: initialized pinctrl subsystem
+[    0.208374] NET: Registered protocol family 16
+[    0.217764] DMA: preallocated 256 KiB pool for atomic coherent allocations
+[    0.237384] pinctrl_rts3917 18800000.pinctrl: rtspc registered with IRQs
+[    0.266428] cryptd: max_cpu_qlen set to 1000
+[    0.280421] usbcore: registered new interface driver usbfs
+[    0.291581] usbcore: registered new interface driver hub
+[    0.302516] usbcore: registered new device driver usb
+[    0.312924] usbphy-platform 18140000.usb_phy: Initialized Realtek IPCam USB Phy module
+[    0.329205] videodev: Linux video capture interface: v2.00
+[    0.340455] Advanced Linux Sound Architecture Driver Initialized.
+[    0.353879] clocksource: Switched to clocksource arch_sys_counter
+[    0.366682] FS-Cache: Loaded
+[    0.384933] thermal_sys: Registered thermal governor 'step_wise'
+[    0.385934] thermal thermal_zone0: Thermal zone device registered.
+[    0.411007] NET: Registered protocol family 2
+[    0.420027] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.435344] tcp_listen_portaddr_hash hash table entries: 512 (order: 0, 4096 bytes, linear)
+[    0.452138] TCP established hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.467491] TCP bind hash table entries: 1024 (order: 0, 4096 bytes, linear)
+[    0.481612] TCP: Hash tables configured (established 1024 bind 1024)
+[    0.494481] UDP hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.507563] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes, linear)
+[    0.521741] NET: Registered protocol family 1
+[    0.621093] Initialise system trusted keyrings
+[    0.630416] workingset: timestamp_bits=30 max_order=14 bucket_order=0
+[    0.649766] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[    0.662004] jffs2: version 2.2. © 2001-2006 Red Hat, Inc.
+[    0.717019] NET: Registered protocol family 38
+[    0.726013] Key type asymmetric registered
+[    0.734249] Asymmetric key parser 'x509' registered
+[    0.744049] io scheduler mq-deadline registered
+[    0.753225] io scheduler kyber registered
+[    0.762163] Serial: 8250/16550 driver, 3 ports, IRQ sharing disabled
+[    0.776729] rts-trng 188a0100.trng: Realtek RLX trng driver initialized
+[    0.797520] loop: module loaded
+[    0.804692] zram: Added device: zram0
+[    0.812637] rts-quadspi 18030000.spic: found w25q128fv, expected mx25l12835f
+[    0.826777] rts-quadspi 18030000.spic: w25q128fv (16384 Kbytes)
+[    0.848379] 7 fixed-partitions partitions found on MTD device 18030000.spic
+[    0.862401] Creating 7 MTD partitions on "18030000.spic":
+[    0.873237] 0x000000000000-0x000001000000 : "global"
+[    0.890724] 0x000000000000-0x000000050000 : "boot"
+[    0.906682] 0x000000050000-0x000000060000 : "dtb"
+[    0.922696] 0x000000060000-0x000000370000 : "kernel"
+[    0.938730] 0x000000370000-0x000000500000 : "rootfs"
+[    0.954739] 0x000000500000-0x000000fa0000 : "app"
+[    0.970732] 0x000000fa0000-0x000001000000 : "config"
+[    0.986737] rts-quadspi 18030000.spic: Realtek QSPI Controller at 0x18030000 (irq 7)
+[    1.002724] r8168 Gigabit Ethernet driver 8.048.03-NAPI loaded
+[    1.268036] eth%d: 0xc40d5000, 00:00:00:00:00:00, IRQ 6
+[    1.281225] r8168 18400000.rtl8168: eth_pinctrl is not enabled in dts. You can refer to the doc to enable it if needed.
+[    1.302870] r8168  Copyright (C) 2020  Realtek NIC software team <nicfae@realtek.com> 
+[    1.302870]  This program comes with ABSOLUTELY NO WARRANTY; for details, please see <http://www.gnu.org/licenses/>. 
+[    1.302870]  This is free software, and you are welcome to redistribute it under certain conditions; see <http://www.gnu.org/licenses/>. 
+[    1.364773] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    1.377841] ehci-rts: ehci-rts platform driver
+[    1.387148] ehci-platform 18100000.usb_ehci: EHCI Host Controller
+[    1.399407] ehci-platform 18100000.usb_ehci: new USB bus registered, assigned bus number 1
+[    1.416085] ehci-platform 18100000.usb_ehci: irq 8, io mem 0x18100000
+[    1.441914] ehci-platform 18100000.usb_ehci: USB 2.0 started, EHCI 1.00
+[    1.456333] hub 1-0:1.0: USB hub found
+[    1.463963] hub 1-0:1.0: 1 port detected
+[    1.474080] rts-rtc 18850000.rtc: registered as rtc0
+[    2.025928] clocksource: RTC-RTS: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000000 ns
+[    2.046156] i2c /dev entries driver
+[    2.055915] rts_saradc 18840000.saradc: hwmon_device_register() is deprecated. Please convert the driver to use hwmon_device_register_with_info().
+[    2.082611] Stopped watchdog timer
+[    2.089765] timer margin: 8 sec
+[    2.096934] device-mapper: ioctl: 4.41.0-ioctl (2019-09-16) initialised: dm-devel@redhat.com
+[    2.122398] rts-crypto 18600000.crypto: lookup xts(ecb-aes-rlx) failed!
+[    2.135766] rts-crypto 18600000.crypto: Realtek RLX crypto driver initialized
+[    2.156157] rts-sha 19200000.sha: Realtek RLX sha driver initialized
+[    2.169696] rts-rsa 18f00000.rsa: Realtek RLX rsa driver initialized
+[    2.182704] exFAT: Version 1.3.0
+[    2.189682] rts-otp 188a0300.otp: rts otp probe
+[    2.201151] NET: Registered protocol family 10
+[    2.211857] Segment Routing with IPv6
+[    2.219536] NET: Registered protocol family 17
+[    2.228586] Key type dns_resolver registered
+[    2.239815] Loading compiled-in X.509 certificates
+[    2.265416] rts-rtc 18850000.rtc: setting system clock to 2023-06-25T07:36:09 UTC (1687678569)
+[    2.283073] cfg80211: Loading compiled-in X.509 certificates for regulatory database
+[    2.301064] cfg80211: Loaded X.509 cert 'sforshee: 00b28ddf47aef9cea7'
+[    2.315518] cfg80211: Loaded X.509 cert 'wens: 61c038651aabdcf94bd0ac7ff06c7248db18c600'
+[    2.331964] platform regulatory.0: Direct firmware load for regulatory.db failed with error -2
+[    2.349298] clk: Disabling unused clocks
+[    2.357253] ALSA device list:
+[    2.363228]   No soundcards found.
+[    2.370057] cfg80211: failed to load regulatory.db
+[    2.379695] Warning: unable to open an initial console.
+[    2.392871] Freeing unused kernel memory: 2048K
+[    2.410008] Run /init as init process
+[    2.427586] random: busybox: uninitialized urandom read (4 bytes read)
+[    2.445298] random: busybox: uninitialized urandom read (4 bytes read)
+[    2.464730] random: busybox: uninitialized urandom read (4 bytes read)
+[    2.513085] fs_mgr: Enabling dm-crypt for /newroot
+[    2.558647] fs_mgr: Enabling dm-verity for newroot
+[    2.589358] device-mapper: verity: sha256 using implementation "shash-sha256-rlx"
+[    2.625260] fs_mgr: __mount(source=/dev/mapper/dm-verity-newroot,target=/newroot,type=squashfs)=0
+[    3.486694] random: cryptsetup: uninitialized urandom read (4 bytes read)
+[    3.638112] fs_mgr: Enabling dm-crypt for /app
+[    3.655149] fs_mgr: Enabling dm-verity for app
+[    3.666757] random: sh: uninitialized urandom read (4 bytes read)
+[    3.700288] random: veritysetup: uninitialized urandom read (4 bytes read)
+[    3.726768] device-mapper: verity: sha256 using implementation "shash-sha256-rlx"
+[    3.801661] fs_mgr: __mount(source=/dev/mapper/dm-verity-app,target=/app,type=squashfs)=0
+[    3.842883] jffs2: notice: (160) jffs2_build_xattr_subsystem: complete building xattr subsystem, 0 of xdatum (0 unchecked, 0 orphan) and 0 of xref (0 dead, 0 orphan) found.
+[    3.874096] fs_mgr: __mount(source=/dev/mtdblock6,target=/conf,type=jffs2)=0
+[    4.413670] audio-platform 18500000.audio_dma: assigned reserved memory node audiomem
+[    4.516371] random: modprobe: uninitialized urandom read (4 bytes read)
+[    4.532075] random: mdev: uninitialized urandom read (4 bytes read)
+[    4.547508] random: mdev: uninitialized urandom read (4 bytes read)
+[    4.581500] rts snd internal codec init
+[    4.597219] soc-audio soc-audio.0.auto: ASoC: machine RTS_INTERN_CARD should use snd_soc_register_card()
+[    4.621007] soc-audio soc-audio.0.auto: rts-codec-digital <-> pcm-platform mapping ok
+[    4.637328] soc-audio soc-audio.0.auto: rts-codec-analog <-> pcm-platform mapping ok
+[    4.927267] rtscam:rtscam_dev_init
+[    5.035840] rtscam:rtscam_lock_init
+[    5.086874] SOC_CAMERA:rtscam_soc_probe
+[    5.168642] ZOOM:rtscam_zoom_probe
+[    5.217734] ISP:rtscam_isp_probe
+[    5.241554] VIDEO:video device <rts3917> registered
+[    5.343508] MD:rtscam_isp_md_probe
+[    5.454296] MJPEG:rtscam_jpgenc_probe
+[    5.512992] OSD2:rtscam_osd2_probe
+[    5.535943] random: mdev: uninitialized urandom read (4 bytes read)
+[    5.603118] OSDI:rtscam_osdi_probe
+[    5.669362] RTSTREAM:rtstream_init
+[    5.959939] zram0: detected capacity change from 0 to 8388608
+[    6.001928] Adding 8188k swap on /dev/zram0.  Priority:-2 extents:1 across:8188k SS
+[    6.041168] cp_gpio: loading out-of-tree module taints kernel.
+[    6.053710] cp-gpio-dri initialized
+

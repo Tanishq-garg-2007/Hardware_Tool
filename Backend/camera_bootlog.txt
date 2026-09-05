@@ -1,0 +1,758 @@
+U-Boot SPL 2013.07 (Apr 26 2023 - 10:09:24)
+Timer init
+CLK stop
+PLL init
+pll_init:366
+pll_cfg.pdiv = 10, pll_cfg.h2div = 5, pll_cfg.h0div = 5, pll_cfg.cdiv = 1, pll_cfg.l2div = 2
+nf=118 nr = 1 od0 = 1 od1 = 2
+cppcr is 07605100
+CPM_CPAPCR 0750510d
+nf=84 nr = 1 od0 = 1 od1 = 2
+cppcr is 05405100
+CPM_CPMPCR 07d0590d
+nf=100 nr = 1 od0 = 1 od1 = 2
+cppcr is 06405100
+CPM_CPVPCR 0640510d
+cppcr 0x9a773310
+apll_freq 1404000000
+mpll_freq 1000000000
+vpll_freq = 1200000000
+ddr sel mpll, cpu sel apll
+ddrfreq 500000000
+cclk 1404000000
+l2clk 702000000
+h0clk 200000000
+h2clk 200000000
+pclk 100000000
+CLK init
+SDRAM init
+sdram init start
+ddr_inno_phy_init ..!
+phy reg = 0x00000007, CL = 0x00000007
+ddr_inno_phy_init ..! 11: 00000004
+ddr_inno_phy_init ..! 22: 00000006
+ddr_inno_phy_init ..! 33: 00000006
+REG_DDR_LMR: 00000210
+REG_DDR_LMR: 00000310
+REG_DDR_LMR: 00000110
+REG_DDR_LMR, MR0: 00f73011
+T31_0x5: 00000007
+T31_0x15: 0000000c
+T31_0x4: 00000000
+T31_0x14: 00000002
+INNO_TRAINING_CTRL 1: 00000000
+INNO_TRAINING_CTRL 2: 000000a1
+T31_cc: 00000003
+INNO_TRAINING_CTRL 3: 000000a0
+T31_118: 0000003c
+T31_158: 0000003c
+T31_190: 00000020
+T31_194: 0000001f
+jz-04 : 0x00000051
+jz-08 : 0x000000a0
+jz-28 : 0x00000024
+DDR PHY init OK
+INNO_DQ_WIDTH :00000003
+INNO_PLL_FBDIV :00000014
+INNO_PLL_PDIV :00000005
+INNO_MEM_CFG :00000051
+INNO_PLL_CTRL :00000018
+INNO_CHANNEL_EN :0000000d
+INNO_CWL :00000006
+INNO_CL :00000007
+DDR Controller init
+DDRC_STATUS 0x80000001
+DDRC_CFG 0x0a288a40
+DDRC_CTRL 0x0000011c
+DDRC_LMR 0x00400008
+DDRC_DLP 0x00000000
+DDRC_TIMING1 0x040e0806
+DDRC_TIMING2 0x02170707
+DDRC_TIMING3 0x2007051e
+DDRC_TIMING4 0x1a240031
+DDRC_TIMING5 0xff060405
+DDRC_TIMING6 0x32170505
+DDRC_REFCNT 0x00f26901
+DDRC_MMAP0 0x000020fc
+DDRC_MMAP1 0x00002400
+DDRC_REMAP1 0x03020d0c
+DDRC_REMAP2 0x07060504
+DDRC_REMAP3 0x0b0a0908
+DDRC_REMAP4 0x0f0e0100
+DDRC_REMAP5 0x13121110
+DDRC_AUTOSR_EN 0x00000000
+sdram init finished
+SDRAM init ok
+board_init_r
+image entry point: 0x80100000
+U-Boot 2013.07 (Apr 26 2023 - 10:09:24)
+Board: ISVP (Ingenic XBurst T31 SoC)
+DRAM: 64 MiB
+Top of RAM usable for U-Boot at: 84000000
+Reserving 425k for U-Boot at: 83f94000
+Reserving 32784k for malloc() at: 81f90000
+Reserving 32 Bytes for Board Info at: 81f8ffe0
+Reserving 124 Bytes for Global Data at: 81f8ff64
+Reserving 128k for boot params() at: 81f6ff64
+Stack Pointer at: 81f6ff48
+Now running in RAM - U-Boot at: 83f94000
+MMC: msc: 0
+the manufacturer 1c
+SF: Detected EN25QH64
+*** Warning - bad CRC, using default environment
+In: serial
+Out: serial
+Err: serial
+Net: No ethernet found.
+Autobooting in 1 seconds
+read normal boot at 0x80200000
+the manufacturer 1c
+SF: Detected EN25QH64
+--->probe spend 4 ms
+SF: 131072 bytes @ 0x60000 Read: OK
+--->read spend 46 ms
+go 0x80600000## Starting application at 0x80600000 ...
+Flush cache all before jump.
+U-Boot 2013.07 (Dec 13 2023 - 14:37:37)
+Board: ISVP (Ingenic XBurst T31 SoC)
+DRAM: 64 MiB
+Top of RAM usable for U-Boot at: 84000000
+Reserving 184k for U-Boot at: 83fd0000
+Reserving 32784k for malloc() at: 81fcc000
+Reserving 32 Bytes for Board Info at: 81fcbfe0
+Reserving 124 Bytes for Global Data at: 81fcbf64
+Reserving 128k for boot params() at: 81fabf64
+Stack Pointer at: 81fabf48
+Now running in RAM - U-Boot at: 83fd0000
+MMC: msc: 0
+the manufacturer 1c
+SF: Detected EN25QH64
+*** Warning - bad CRC, using default environment
+In: serial
+Out: serial
+Err: serial
+GPIO : 66094000 -> 67894000
+the manufacturer 1c
+SF: Detected EN25QH64
+--->probe spend 4 ms
+SF: 8388608 bytes @ 0x0 Read: OK
+--->read spend 2687 ms
+------Firmware check pass!-----
+the manufacturer 1c
+SF: Detected EN25QH64
+--->probe spend 4 ms
+SF: 1527808 bytes @ 0x80200 Read: OK
+--->read spend 493 ms
+## Booting kernel from Legacy Image at 80700000 ...
+Image Name: Linux-3.10.14__isvp_swan_1.0__
+Image Type: MIPS Linux Kernel Image (lzma compressed)
+Data Size: 1263749 Bytes = 1.2 MiB
+Load Address: 80010000
+Entry Point: 803076a0
+Verifying Checksum ... OK
+Uncompressing Kernel Image ... OK
+Starting kernel ...
+[ 0.000000] Initializing cgroup subsys cpu
+[ 0.000000] Initializing cgroup subsys cpuacct
+[ 0.000000] Linux version 3.10.14__isvp_swan_1.0__ (lsh@ubuntu) (gcc version 4.7.2 (Ingenic r2.3.3 2016.12) ) #1 PREEMPT Wed Dec 13 14:41:13 CST 2023
+[ 0.000000] bootconsole [early0] enabled
+[ 0.000000] CPU0 RESET ERROR PC:5CCA7B32
+[ 0.000000] CPU0 revision is: 00d00100 (Ingenic Xburst)
+[ 0.000000] FPU revision is: 00b70000
+[ 0.000000] CCLK:1404MHz L2CLK:702Mhz H0CLK:250MHz H2CLK:250Mhz PCLK:125Mhz
+[ 0.000000] Determined physical RAM map:
+[ 0.000000] memory: 00397000 @ 00010000 (usable)
+[ 0.000000] memory: 00039000 @ 003a7000 (usable after init)
+[ 0.000000] User-defined physical RAM map:
+[ 0.000000] memory: 02d00000 @ 00000000 (usable)
+[ 0.000000] Zone ranges:
+[ 0.000000] Normal [mem 0x00000000-0x02cfffff]
+[ 0.000000] Movable zone start for each node
+[ 0.000000] Early memory node ranges
+[ 0.000000] node 0: [mem 0x00000000-0x02cfffff]
+[ 0.000000] Primary instruction cache 32kB, 8-way, VIPT, linesize 32 bytes.
+[ 0.000000] Primary data cache 32kB, 8-way, VIPT, no aliases, linesize 32 bytes
+[ 0.000000] pls check processor_id[0x00d00100],sc_jz not support!
+[ 0.000000] MIPS secondary cache 128kB, 8-way, linesize 32 bytes.
+[ 0.000000] Built 1 zonelists in Zone order, mobility grouping off. Total pages: 11430
+[ 0.000000] Kernel command line: console=ttyS1,115200n8 mem=45M@0x0 rmem=19M@0x2d00000 root=/dev/mtdblock6 rootfstype=squashfs spdev=/dev/mtdblock7 noinitrd init=/etc/preinit os_size=1263813
+[ 0.000000] PID hash table entries: 256 (order: -2, 1024 bytes)
+[ 0.000000] Dentry cache hash table entries: 8192 (order: 3, 32768 bytes)
+[ 0.000000] Inode-cache hash table entries: 4096 (order: 2, 16384 bytes)
+[ 0.000000] Memory: 41124k/46080k available (3070k kernel code, 4956k reserved, 605k data, 228k init, 0k highmem)
+[ 0.000000] SLUB: HWalign=32, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[ 0.000000] Preemptible hierarchical RCU implementation.
+[ 0.000000] NR_IRQS:358
+[ 0.000000] clockevents_config_and_register success.
+[ 0.000015] Calibrating delay loop... 1397.55 BogoMIPS (lpj=6987776)
+[ 0.037793] pid_max: default: 32768 minimum: 301
+[ 0.042651] Mount-cache hash table entries: 512
+[ 0.047597] Initializing cgroup subsys debug
+[ 0.051854] Initializing cgroup subsys freezer
+[ 0.057348] devtmpfs: initialized
+[ 0.061482] regulator-dummy: no parameters
+[ 0.065728] NET: Registered protocol family 16
+[ 0.072314] bio: create slab at 0
+[ 0.077792] jz-dma jz-dma: JZ SoC DMA initialized
+[ 0.082679] usbcore: registered new interface driver usbfs
+[ 0.088262] usbcore: registered new interface driver hub
+[ 0.093686] usbcore: registered new device driver usb
+[ 0.098866] (null): set:311 hold:312 dev=125000000 h=625 l=625
+[ 0.105778] Switching to clocksource jz_clocksource
+[ 0.110842] cfg80211: Calling CRDA to update world regulatory domain
+[ 0.117810] jz-dwc2 jz-dwc2: cgu clk gate get error
+[ 0.122718] DWC IN OTG MODE
+[ 0.126138] dwc2 dwc2: Keep PHY ON
+[ 0.129502] dwc2 dwc2: Using Buffer DMA mode
+[ 0.133852] dwc2 dwc2: Core Release: 3.00a
+[ 0.138012] dwc2 dwc2: DesignWare USB2.0 High-Speed Host Controller
+[ 0.144361] dwc2 dwc2: new USB bus registered, assigned bus number 1
+[ 0.151229] usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+[ 0.158038] usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+[ 0.165396] usb usb1: Manufacturer: Linux 3.10.14__isvp_swan_1.0__ dwc2-hcd
+[ 0.172439] usb usb1: SerialNumber: dwc2
+[ 0.176698] hub 1-0:1.0: USB hub found
+[ 0.180428] hub 1-0:1.0: 1 port detected
+[ 0.184594] dwc2 dwc2: DWC2 Host Initialized
+[ 0.188995] NET: Registered protocol family 2
+[ 0.193798] TCP established hash table entries: 512 (order: 0, 4096 bytes)
+[ 0.200771] TCP bind hash table entries: 512 (order: -1, 2048 bytes)
+[ 0.207149] TCP: Hash tables configured (established 512 bind 512)
+[ 0.213470] TCP: reno registered
+[ 0.216682] UDP hash table entries: 256 (order: 0, 4096 bytes)
+[ 0.222626] UDP-Lite hash table entries: 256 (order: 0, 4096 bytes)
+[ 0.229141] NET: Registered protocol family 1
+[ 0.233799] freq_udelay_jiffys[0].max_num = 10
+[ 0.238234] dwc2 dwc2: ID PIN CHANGED!
+[ 0.242102] cpufreq udelay loops_per_jiffy
+[ 0.246438] 12000 59724 59724
+[ 0.249704] 24000 119449 119449
+[ 0.253160] 60000 298622 298622
+[ 0.256592] 120000 597245 597245
+[ 0.260123] 200000 995409 995409
+[ 0.263663] 300000 1493114 1493114
+[ 0.267363] 600000 2986229 2986229
+[ 0.271078] 792000 3941822 3941822
+[ 0.274780] 1008000 5016864 5016864
+[ 0.278576] 1200000 5972458 5972458
+[ 0.286027] squashfs: version 4.0 (2009/01/31) Phillip Lougher
+[ 0.292104] msgmni has been set to 80
+[ 0.296692] io scheduler noop registered
+[ 0.300616] io scheduler cfq registered (default)
+[ 0.307215] jz-uart.1: ttyS1 at MMIO 0x10031000 (irq = 58) is a uart1
+[ 0.314816] console [ttyS1] enabled, bootconsole disabled
+[ 0.314816] console [ttyS1] enabled, bootconsole disabled
+[ 0.326534] zram: Created 2 device(s) ...
+[ 0.330894] logger: created 256K log 'log_main'
+[ 0.336016] jz SADC driver registeres over!
+[ 0.341546] jz TCU driver register completed
+[ 0.346242] the id code = 1c7017, the flash name is EN25QH64
+[ 0.352237] JZ SFC Controller for SFC channel 0 driver register
+[ 0.358360] SLP flash nor read
+[ 0.361636] hdrA:1265664,B:1790464,C:2665984
+[ 0.366053] Searching for RedBoot partition table
+[ 0.370937] 10 RedBoot partitions found on MTD device jz_sfc
+[ 0.376788] Creating 10 MTD partitions on "jz_sfc":
+[ 0.381854] 0x000000000000-0x00000002d800 : "factory_boot"
+[ 0.387524] mtd: partition "factory_boot" doesn't end on an erase block -- force read-only
+[ 0.396560] 0x00000002d800-0x000000030000 : "factory_info"
+[ 0.402274] mtd: partition "factory_info" doesn't start on an erase block boundary -- force read-only
+[ 0.412253] 0x000000030000-0x000000040000 : "art"
+[ 0.417544] 0x000000040000-0x000000060000 : "config"
+[ 0.423184] 0x000000060000-0x000000080000 : "normal_boot"
+[ 0.429229] 0x000000080000-0x0000001b5200 : "kernel"
+[ 0.434408] mtd: partition "kernel" doesn't end on an erase block -- force read-only
+[ 0.442899] 0x0000001b5200-0x000000440000 : "rootfs"
+[ 0.448037] mtd: partition "rootfs" doesn't start on an erase block boundary -- force read-only
+[ 0.457512] 0x000000440000-0x0000007ffe00 : "rootfs_data"
+[ 0.463136] mtd: partition "rootfs_data" doesn't end on an erase block -- force read-only
+[ 0.472045] 0x0000007ffe00-0x000000800000 : "verify"
+[ 0.477183] mtd: partition "verify" doesn't start on an erase block boundary -- force read-only
+[ 0.486662] 0x000000080000-0x000000800000 : "firmware"
+[ 0.492460] SPI NOR MTD LOAD OK
+[ 0.495758] tun: Universal TUN/TAP device driver, 1.6
+[ 0.501017] tun: (C) 1999-2004 Max Krasnyansky
+[ 0.507581] usbcore: registered new interface driver asix
+[ 0.513228] usbcore: registered new interface driver ax88179_178a
+[ 0.519553] usbcore: registered new interface driver cdc_ether
+[ 0.525646] usbcore: registered new interface driver net1080
+[ 0.531559] usbcore: registered new interface driver cdc_subset
+[ 0.537703] usbcore: registered new interface driver zaurus
+[ 0.543537] usbcore: registered new interface driver cdc_ncm
+[ 0.549802] usbcore: registered new interface driver usbhid
+[ 0.555610] usbhid: USB HID core driver
+[ 0.559699] Registered character driver slp_flash_chrdev
+[ 0.565206] SLP flash cdev init! jz_sfc
+[ 0.569257] TCP: cubic registered
+[ 0.572894] NET: Registered protocol family 17
+[ 0.578042] /home/lsh/projects/slp/slp-sp-target-src/ingenict31/linux-3.10.14/drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
+[ 0.594920] VFS: Mounted root (squashfs filesystem) readonly on device 31:6.
+[ 0.605498] devtmpfs: mounted
+[ 0.608983] Freeing unused kernel memory: 228K (803a7000 - 803e0000)
+- preinit -
+mounting rwroot
+- init -
+[ 1.861516] jzmmc_v1.2 jzmmc_v1.2.0: vmmc regulator missing
+[ 1.901703] jzmmc_v1.2 jzmmc_v1.2.0: register success!
+Please press Enter to activate this console. [ 2.086695] zram0: detected capacity change from 0 to 16777216
+Setting up swapspace version 1, size = 16773120 bytes
+UUID=7f04d67b-9460-478e-962b-c[ 2.099207] Adding 16380k swap on /dev/zram0. Priority:-1 extents:1 across:16380k SS
+186878ba342
+Wed Dec 13 12:08:35 GMT 2023
+reset_gpio = 62
+===insmod /lib/modules/3.10.14/k_hi_reset.ko===
+[ 4.523375] Success to init gpio reset
+led_green_gpio = 42
+led_red_gpio = 43
+led_green_active_low = 0
+led_red_active_low = 0
+===insmod /lib/modules/3.10.14/gpio_leds.ko===
+Command failed: Unknown error
+Starting wlan-manager: wlan-manager started.
+find usb device failed
+find usb device failed
+[Debug] [setLedEvent:429] setLedEvent = 3
+[Debug] [main:577] gLastLedEvent = 1, gCurrLedEvent = 3
+[Debug] [setLedEvent:429] setLedEvent = 3
+[Debug] [main:577] gLastLedEvent = 3, gCurrLedEvent = 3
+[Debug] [main:617] The event is the same, don't do everything
+---WLAN---release ip
+find usb device failed
+find usb device failed
+find usb device failed
+find usb device failed
+find usb device failed
+find usb device failed
+find usb device failed
+find usb device failed
+find usb device failed
+[2023-12-13 12:08:49][40;31m[ERROR][0m[cloud-service] read_value_from_uci_option(352): error: failed to load package.
+[2023-12-13 12:08:49][40;31m[ERROR][0m[cloud-service] init_server_info(109): READ SVR FRO CONFIG ERROR
+[ 16.523044] wlan-manager: insmod 8188fu.ko...
+[2023-12-13 12:08:49][43;37m[MAJOR][0m[cloudiot]iot_base.c:233(run_once)-- cloud-iot start, pid: [712]
+generate key: 3600days 2048bits
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(644): dev_type: SMART.IPCAMERA
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(645): dev_model: C200
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(646): dev_alias: Tapo_Camera_12AC
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(649): dev_mac: 3C52A1EE12AC
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(651): zoneid: Asia/Kolkata
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(652): dev_name: C200
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(653): hw_ver: 3.0
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(654): fw_ver: 1.3.11 Build 231213 Rel.52877n(4555)
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(656): oem_id: 5CFA4B8CF3F7D826581082F1C0CFAAE6
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(659): device_bind_status: 1
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(660): msg_push_switch: 1
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(662): bindCode: TC0076DBD09C142D4EC4AD4A77466DE02907
+[2023-12-13 12:08:49][40;32m[INFO][0m[cloud-service] init_config_info(663): deviceSecret:
+[2023-12-13 12:08:49][40;31m[ERROR][0m[cloud-service] read_value_from_uci_option(366): error: failed to get cloud_config:bind:bindToken.
+[2023-12-13 12:08:49][41;37m[ERROR][0m[cloudiot]ubus.c:304(get_validate_token)-- mqtt not establish, get validate deviceToken failed.
+[ 17.281448] usbcore: registered new interface driver rtl8188fu
+sh: write error: Invalid argument
+/etc/sc2336-t31-CY6003.bin exists
+======================INSMOD jz drivers=====================
+======================INSMOD audio.ko=====================
+[ 22.843819] jz_codec_register: probe() successful!
+[storage] create_and_init_shm(134). creating initial shm...
+[storage] create_and_init_shm(137). shm creating succeeded, id: 32769, len:16960
+[storage] create_and_init_shm(148). shm mapped @0x7794a000.
+[storage] create_and_init_sem(175). creating initial sem...
+umount: can't umount /tmp/mnt/harddisk_1: No such file or directory
+[storage] formatted_exec(70). system function error :No such file or directory
+[storage] do_umount(215). No such file or directory
+ubus4dbg_startTask
+ubus4dbg_taskloop ubus_add_object ok
+Invalid sdcard device /dev/mmcblk0, please check configuration.
+[storage] formatted_exec(70). system function error :No such file or directory
+[storage] uci_load_single_disk(532). mounting disk 1 failed
+[ 23.260933] dma dma0chan24: Channel 24 have been requested.(phy id 7,type 0x06 desc a14f7000)
+[ 23.270132] dma dma0chan25: Channel 25 have been requested.(phy id 6,type 0x06 desc a14de000)
+[ 23.279520] dma dma0chan26: Channel 26 have been requested.(phy id 5,type 0x04 desc a14ba000)
+======================INSMOD tx-isp-t31.ko=====================
+[ 23.461328] @@@@ tx-isp-probe ok(version HTP20220823a), compiler date=Aug 23 2022 @@@@@
+======================INSMOD sensor_sc2336_t31.ko=====================
+======================INSMOD avpu.ko=====================
+======================INSMOD done=====================
+[storage] update_disk_status_for_cet(308). ubus_lookup_id update_disk_status failed
+ifconfig: eth0: error fetching interface information: Device not found
+/etc/rc.common: line 25: msglog1: not found
+[2023-12-13 12:08:57][45;37m[WARN][0m[cloudiot]socket_fd.c:498(socket_dns_request_timeout)-- host: security.iot.i.tplinknbu.com, DNS timeout
+[2023-12-13 12:08:57] nvid.c:main:150 - nvid started
+[2023-12-13 12:08:57] nvid.c:main:172 - signal_handler succeed
+[2023-12-13 12:08:57] nvid.c:main:193 - begin start onvif
+[reload_timing_reboot_cfg]-271: random value: 151s
+[2023-12-13 12:08:57] nvid.c:main:200 - start onvif succeed
+[2023-12-13 12:08:57] nvid.c:main:214 - begin uloop run
+[storage] update_disk_status_for_cet(308). ubus_lookup_id update_disk_status failed
+[telemetry] telemetry_load_config(194): uci_get_value startegyId error
+openapid | 2023-12-13 12:08:57.905 | openapi.c:1595 | openapi startup !
+openapid | 2023-12-13 12:08:57.916 | third/src/https_server.c:1738 | .............................https_connection_new fd:-1
+openapid | 2023-12-13 12:08:57.917 | third/src/https_server.c:1348 | tofree:0, local_count :0
+openapid | 2023-12-13 12:08:57.919 | third/src/https_server.c:1264 | tofree:0, local_count :0
+openapid | 2023-12-13 12:08:57.919 | third/src/https_server.c:1910 | https_server_new OK
+openapid | 2023-12-13 12:08:57.919 | openapi.c:1510 | HTTPS OPENAPI Server inited
+openapid | 2023-12-13 12:08:57.920 | openapi_ubus.c:212 | ubus uloop thread started.
+openapid | 2023-12-13 12:08:57.923 | openapi_ubus.c:170 | Connecting to ubus...
+openapid | 2023-12-13 12:08:57.923 | openapi_ubus.c:177 | connect to ubus success
+[VENC]Cmos_LoadVENCPara [/tmp/video_cfg.ini] Success.
+(ST_Sys_Init 29)exec function pass
+[ 26.271282] -----sc2336_detect: 581 ret = 0, v = 0xcb
+[ 26.277110] -----sc2336_detect: 589 ret = 0, v = 0x3a
+[ 26.282452] sc2336 chip found @ 0x30 (i2c0)
+[ 26.286776] sensor driver version H20210805a
+(ST_Sys_Init 31)exec function pass
+[ 26.558165] sc2336 stream on
+(ST_Sys_Init 33)exec function pass
+---- FPGA board is ready ----
+Board UID : 30AB6E51
+Board HW ID : 72000460
+Board rev. : 5DE5A975
+Board date : 20190326
+-----------------------------
+(ST_Sys_Init 35)exec function pass
+(ST_Sys_Init 38)exec function pass
+[DBG]:ST_Sys_Init[50]: ImpSystemInit success
+(tp_video_init 610)exec function pass
+(ST_FrameSource_Init 78)exec function pass
+(ST_FrameSource_Init 80)exec function pass
+(start_algo_chn 256)exec function pass
+[ST_FrameSource_Enable 169]exec function pass
+(start_algo_chn 258)exec function pass
+[ST_FrameSource_SetDepth 197]exec function pass
+(start_algo_chn 260)exec function pass
+(tp_video_init 616)exec function pass
+(tp_video_init 621)exec function pass
+stream 0, w is 1280, h is 720
+(ST_FrameSource_Init 78)exec function pass
+(ST_FrameSource_Init 80)exec function pass
+(tp_video_start 906)exec function pass
+bit_rate = 768 at last
+[ST_Venc_CreateGroup 183]exec function pass
+(tp_video_start 922)exec function pass
+[ST_Venc_CreateChannel 125]exec function pass
+!! The specified ScalingList is not allowed; it will be adjusted!!
+[ST_Venc_CreateChannel 127]exec function pass
+(tp_video_start 1063)exec function pass
+[ST_Venc_RegisterChannel 141]exec function pass
+(tp_video_start 1065)exec function pass
+iIPDelta 4294967295, iMaxQP 51, iMinQP 25
+pRCParam->pMaxPictureSize[0]=1536000, pCodecEncode->m_SrcBufPoolConfig.zBufSize * 8 / 1.2=1024000
+(ST_Sys_Bind 94)exec function pass
+(tp_video_start 1130)exec function pass
+(ST_Sys_Bind 94)exec function pass
+(tp_video_start 1140)exec function pass
+[ST_FrameSource_Enable 169]exec function pass
+(tp_video_start 1143)exec function pass
+[ST_Venc_StartChannel 155]exec function pass
+(tp_video_start 1145)exec function pass
+stream 1, w is 640, h is 360
+(ST_FrameSource_Init 78)exec function pass
+(ST_FrameSource_Init 80)exec function pass
+(tp_video_start 906)exec function pass
+bit_rate = 400 at last
+[ST_Venc_CreateGroup 183]exec function pass
+(tp_video_start 922)exec function pass
+[ST_Venc_CreateChannel 125]exec function pass
+!! The specified ScalingList is not allowed; it will be adjusted!!
+[ST_Venc_CreateChannel 127]exec function pass
+(tp_video_start 1063)exec function pass
+[ST_Venc_RegisterChannel 141]exec function pass
+(tp_video_start 1065)exec function pass
+iIPDelta 0, iMaxQP 44, iMinQP 30
+pRCParam->pMaxPictureSize[0]=800000, pCodecEncode->m_SrcBufPoolConfig.zBufSize * 8 / 1.2=533000
+(ST_Sys_Bind 94)exec function pass
+(tp_video_start 1084)exec function pass
+(ST_Sys_Bind 94)exec function pass
+(tp_video_start 1094)exec function pass
+[ST_FrameSource_Enable 169]exec function pass
+(tp_video_start 1143)exec function pass
+[ST_Venc_StartChannel 155]exec function pass
+(tp_video_start 1145)exec function pass
+stream 2, w is 640, h is 360
+(ST_FrameSource_Init 78)exec function pass
+(ST_FrameSource_Init 80)exec function pass
+(tp_video_start 906)exec function pass
+bit_rate = 1024 at last
+[ST_Venc_CreateGroup 183]exec function pass
+(tp_video_start 922)exec function pass
+[ST_Venc_CreateChannel 125]exec function pass
+[storage] update_disk_status_for_cet(308). ubus_lookup_id update_disk_status failed
+[ST_Venc_CreateChannel 127]exec function pass
+(tp_video_start 1063)exec function pass
+[ST_Venc_RegisterChannel 141]exec function pass
+(tp_video_start 1065)exec function pass
+(ST_Sys_Bind 94)exec function pass
+(tp_video_start 1107)exec function pass
+(ST_Sys_Bind 94)exec function pass
+(tp_video_start 1117)exec function pass
+[ST_FrameSource_Enable 169]exec function pass
+(tp_video_start 1143)exec function pass
+[ST_Venc_StartChannel 155]exec function pass
+(tp_video_start 1145)exec function pass
+video_init done
+[2023-12-13 12:08:59][41;37m[ERROR][0m[cloudiot]http_client.c:54(http_client_timeout_handler)-- http connect timeout, req type: 0.
+[2023-12-13 12:08:59][40;31m[ERROR][0m[cet][buffer_pool_alloc]-210: buffer audio queue id.
+uci_api.c:59 (get_config_package) uci load package faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package regionentrance_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package regionexiting_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package loitering_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package gathering_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package fastmoving_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package parking_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package unattendedbaggage_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package objectremove_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package audioexception_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package defocus_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package scenechange_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package alarm_input faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package overline_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:217 (read_linkage_config) get info section failed
+uci_api.c:217 (read_linkage_config) get info section failed
+uci_api.c:59 (get_config_package) uci load package faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package abandonandtaken_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:217 (read_linkage_config) get info section failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_group faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package face_gallery faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package regionentrance_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package regionentrance_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package regionexiting_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package regionexiting_detection faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package faild
+uci_api.c:173 (read_linkage_config) get config package failed
+uci_api.c:59 (get_config_package) uci load package parking_occupy faild
+uci_api.c:173 (read_linkage_config) get config package failed
+[2023-12-13 12:08:59][40;32m[INFO][0m[cet][cet_ubus_register_methods]-8911: policy = 0x77dc61e8, n_policy = 3
+[2023-12-13 12:08:59][40;32m[INFO][0m[cet][cet_ubus_register_methods]-8911: policy = 0x77dc6200, n_policy = 1
+[2023-12-13 12:08:59][40;32m[INFO][0m[cet][cet_ubus_register_methods]-8911: policy = 0x77dc6208, n_policy = 4
+[storage] init_stm_files_structure(144). sizeof(struct stm_file) = 72
+[storage] open_shm(305). exit open shm(shmprt:0x6a98b000 shmlen:16960 flag = 0x1b6).
+[storage] open_sem(333). exit open sem(semid:32769, flag:0x1b4).
+[storage] data_sync_handle_thread(226). register signal handler on thread:0x6a98a4f0
+[record_create]-5662: The adjusting time is: 1702449539
+[2023-12-13 12:08:59][40;32m[INFO][0m[cet][reload_audio_record_cfg]-967: ENABLE record and clips audio!
+[2023-12-13 12:08:59][40;31m[ERROR][0m[cet][bq_register_record]-525: bq_register_record chn: 0, stream_t: 0, tid: 1779999984
+[storage] stm_open(1940). [0] stm_fd is allocated. channel = 0, type = video, flags = 0x1, mode = 0x1
+[record_stop]-3804: Record stop time is: 1702449539
+[storage] detection_index_new(1851). mkdir /tmp/mnt/harddisk_1/snapshot/ failed
+[storage] g_index_total_get(1827). detection_index_new error:No such file or directory
+[storage] detection_handle_end(974). arg NULL
+[storage] update_disk_status_for_cet(308). ubus_lookup_id update_disk_status failed
+[2023-12-13 12:09:01][40;32m[INFO][0m[cet][input_h264_ch0_device_init]-511: Init H264 video device H264-ch0
+[2023-12-13 12:09:01][40;32m[INFO][0m[cet][input_h264_ch1_device_init]-561: Init H264 video device H264-ch1
+[AUDIO]Cmos_LoadAUDIOPara [/tmp/audio_cfg.ini] Success.
+[cry_detect_intf_init 169] libbcd Version: 1.0.0.112-63d9611-c200v3-rel
+cry_detect_intf_init success
+[2023-12-13 12:09:01][40;32m[INFO][0m[cet][tp_audio_start]-444: tp_audio_start .....
+[2023-12-13 12:09:01][40;31m[ERROR][0m[cet][audio_trans_volume]-179: The audio before transform volume percent is 100
+sampleRate: 8000 bitWidth: 16 soundMode: 1 volume: 62 ptNumPerFrm: 480
+[audio_ai_init 303]exec function pass
+[ 28.830708] codec_set_device: set device: MIC...
+[audio_ai_init 324]exec function pass
+[audio_ai_init 326]exec function pass
+[audio_ai_init 328]exec function pass
+[audio_ai_init 330]exec function pass
+[audio_enable_NR 148]exec function pass
+IMP_AI_EnableNs res = 0
+tp_NSlib_load L:40 error occured.
+[2023-12-13 12:09:01][40;31m[ERROR][0m[cet][tp_audio_start]-487: Fail to init tp_NS handle
+input_sound_device_init done
+[2023-12-13 12:09:01][40;31m[ERROR][0m[cet][dn_switch_start]-615: isp_file_prepare=TRUE
+IR:IR_LED_CTRL_GPIO_ACTIVE_LOW 0 failed
+IR:WL_LED_PWM_CTRL_PORT 0 failed
+[INI]Cmos_LoadINIPara [/tmp/isp_cfg.ini] Success.
+===================== ir_led_gpio_port 49
+===================== ir_cut_gpio_port 52
+===================== ir_cut_double_gpio_ports.gpios[0] 57
+===================== ir_cut_double_gpio_ports.gpios[1] 58
+[ISP]MR_ENABLE=TRUE, Setting init mirror and rotate
+[tp_isp_sdk_set_mirror_mode_init(1314)] hEnable = 0, vEnable = 0
+[2023-12-13 12:09:01][40;31m[ERROR][0m[cet][dn_switch_start]-625: ---------------tp_isp_init success---------------
+[2023-12-13 12:09:01][40;31m[ERROR][0m[cet][dn_switch_start]-663: NOT is_stain_test_needed. Load isp para.
+=======IR CHANGED=========
+Before dn_switch GPIO setting, ircut_gpio_port is 52, ircut_active_low is 1, irled_gpio_port is 49, irled_active_low is 0
+[ISP]set ir on and ircut to night
+=======IR CHANGED=========
+Before dn_switch GPIO setting, ircut_gpio_port is 52, ircut_active_low is 1, irled_gpio_port is 49, irled_active_low is 0
+[storage] update_disk_status_for_cet(308). ubus_lookup_id update_disk_status failed
+ingenic wtd timeout is set to 60 sec
+[sys_uci_get_val]-161: uci_lookup_ptr error: No Complete
+[sys_uci_get_val]-161: uci_lookup_ptr error: No Complete
+[ISP]set ir off and ircut to day
+[ISP] Set infrared_lamp related isp parameters, [iq mode and load bin]
+[2023-12-13 12:09:02][40;31m[ERROR][0m[cet][dn_switch_start]-673: Initialize dn switch threads.
+[2023-12-13 12:09:02][40;31m[ERROR][0m[cet][dn_switch_start_thread]-6916: dn_switch_start_auto_thread created
+[2023-12-13 12:09:02][40;31m[ERROR][0m[cet][dn_switch_start_thread]-6923: dn_switch_start_sched_thread created
+[2023-12-13 12:09:02][40;31m[ERROR][0m[cet][dn_switch_start_thread]-6931: dn_switch_start_constant_thread created
+[2023-12-13 12:09:02][40;31m[ERROR][0m[cet][dn_switch_start_thread]-6940: dn_switch_start_thread OK
+[2023-12-13 12:09:02][40;31m[ERROR][0m[cet][dn_switch_start]-682: Set irled and ircut to OFF(DAY) while initializing.
+dn switch start success
+x_motor_max_speed = 440
+x_motor_direction = 1
+x_motor_forward_direction = -1
+x_motor_model = "24BYJ48_64"
+x_motor_start_angle = 0
+x_motor_end_angle = 340
+x_motor_phy_start_angle = 0
+x_motor_phy_end_angle = 340
+x_motor_construct_master_teeth = 1
+x_motor_construct_slave_teeth = 1
+y_motor_max_speed = 440
+y_motor_direction = -1
+y_motor_forward_direction = -1
+y_motor_model = "24BYJ48_64"
+y_motor_start_angle = -15
+y_motor_end_angle = 55
+y_motor_phy_start_angle = -15
+y_motor_phy_end_angle = 55
+y_motor_construct_master_teeth = 1
+y_motor_construct_slave_teeth = 1
+x_motor_gpio_a = 39
+x_motor_gpio_b = 45
+x_motor_gpio_c = 46
+x_motor_gpio_d = 40
+y_motor_gpio_a = 41
+y_motor_gpio_b = 47
+y_motor_gpio_c = 48
+y_motor_gpio_d = 38
+[storage] update_disk_status_for_cet(308). ubus_lookup_id update_disk_status failed
+===insmod /lib/modules/3.10.14/motor_driver.ko===
+[ 31.381825] Registered character driver x-motor
+[ 31.387514] Registered character driver y-motor
+[ 31.424858] PTZ: auto calibrate on boot[2023-12-13 12:09:04][40;32m[INFO][0m[cet][download_thread]-879: cet module [playback] download thread started!
+RTPSERVEREXECUTOR Thread Start
+RTSP: start to send data via RTP Server
+Start RTSP Server on port 554
+[Media Source]: query form uci, audio_config.microphone.encode_type = G711alaw
+[Media Source]: query form uci, audio_config.microphone.sampling_rate = 8
+[Media Source]: query form uci, audio_config.microphone.encode_type = G711alaw
+[Media Source]: query form uci, network.wan.macaddr = 3C:52:A1:EE:12:AC
+[Media Source]: StartInputThread with id 1653105904, register to bq with id 2
+bufq[2]: empty sig list. create one. The first thread id is 1653105904
+[Media Source]: Create thread succeed.
+[Media Source]: query form uci, multicast.main.enabled = off
+[Media Source]: query form uci, multicast.main.address = 224.0.1.0
+[Media Source]: query form uci, multicast.main.random = on
+[Media Source]: query form uci, multicast.main.port = 10000
+[Media Source]: query form uci, video.main.resolution = 1280*720
+[Media Source]: query form uci, video.main.encode_type = H264
+[Media Source]: ExecuteAudioDataInputqueue 2 pBqEntity 0x641852ec pESBuffer 0x641809b0 iCodec 210
+[Media Source]: query form uci, audio_config.microphone.sampling_rate = 8
+Update Audio Mediainfo iCodec 210
+[Media Source]: query form uci, audio_config.microphone.sampling_rate = 8
+[Media Source]: query form uci, network.wan.macaddr = 3C:52:A1:EE:12:AC
+[Media Source]: StartInputThread with id 1636328688, register to bq with id 0
+bufq[0]: empty sig list. create one. The first thread id is 1636328688
+[Media Source]: Create thread succeed.
+[2023-12-13 12:09:04] start_smart_detection:868 - TPSDSetAttr--TP_SD_ATTR_IPC_TYPE TP_INDOOR.
+[Media Source]: query form uci, multicast.minor.enabled = off
+[Media Source]: query form uci, multicast.minor.address = 224.0.1.0
+[Media Source]: query form uci, multicast.minor.random = on
+[1;33m[DEBUG][0m 1702449544:164961 pCommonContext->ucIPCType is set to : 1
+[Media Source]: query form uci, multicast.minor.port = 10002
+[Media Source]: ExecuteVideoDataInput queue 0 pBqEntity 0x64185a1c pESBuffer 0x64183a40 iCodec 100
+[Media Source]: MediaInfo update, iCodec 100 and iNaluType 7
+[Media Source]: MediaInfo update, iCodec 100 and iNaluType 8
+0 Update SPS/PPS/VPS media info iCodec 100
+[Media Source]: query form uci, video.minor.resolution = 640*360
+[2023-12-13 12:09:04] check_enhance_event_num:262 - check_enhance_event_num SUCCESS(10 >= 6).
+[Media Source]: query form uci, video.minor.encode_type = H264
+[Media Source]: query form uci, network.wan.macaddr = 3C:52:A1:EE:12:AC
+[Media Source]: StartInputThread with id 1594385648, register to bq with id 1
+bufq[1]: empty sig list. create one. The first thread id is 1594385648
+[Media Source]: Create thread succeed.
+[2023-12-13 12:09:04][40;32m[INFO][0m[cet][cet_ubus_init]-8823: connected as 0d7615b3
+[Media Source]: ExecuteVideoDataInput queue 1 pBqEntity 0x64185684 pESBuffer 0x641821f8 iCodec 100
+[Media Source]: MediaInfo update, iCodec 100 and iNaluType 7
+[Media Source]: MediaInfo update, iCodec 100 and iNaluType 8
+1 Update SPS/PPS/VPS media info iCodec 100
+vda_ubus_register_event_handler 2016
+[2023-12-13 12:09:04][40;32m[INFO][0m[cet][main]-1156: Server begin eventloop
+[1;33m[DEBUG][0m 1702449544:225372 pCommonContext->ucIRState is set to : 0
+[RTSP main] user password changed
+[2023-12-13 12:09:04] alarm_delivery_update_env:2370 - update ENV:0, 0x77b19c84, 0x77b19984
+[2023-12-13 12:09:04] load_cfg_ppd:4436 - people_detection: user don't set any region! Turn off detection.
+[2023-12-13 12:09:04][40;33m[WARN][0m[cet][output_sound_device_cb]-202: Audio overwrite occur, get buf too slowly
+tp_osd_sdk_init!
+tp_osd_sdk_create_region, osd_strm_id is 0
+strmid is 0, hHandle is 0, handle is -1, x1, y1, w, h is 0,0,420,32
+tp_osd_sdk_create_region, osd_strm_id is 0
+strmid is 0, hHandle is 1, handle is -1, x1, y1, w, h is 0,660,144,56
+tp_osd_sdk_create_region, osd_strm_id is 1
+strmid is 1, hHandle is 10, handle is -1, x1, y1, w, h is 0,0,228,17
+tp_osd_sdk_create_region, osd_strm_id is 1
+strmid is 1, hHandle is 11, handle is -1, x1, y1, w, h is 0,332,72,28
+[2023-12-13 12:09:05][40;32m[INFO][0m[cet][osd_reconfig]-516: osd reconfig successful
+[record_stop]-3804: Record stop time is: 1702449545
+[storage] detection_index_new(1851). mkdir /tmp/mnt/harddisk_1/snapshot/ failed
+[storage] g_index_total_get(1827). detection_index_new error:No such file or directory
+[storage] detection_handle_end(974). arg NULL
+[2023-12-13 12:09:05] alarm_delivery_update_env:2370 - update ENV:0, 0x77b19c84, 0x77b19984
+[2023-12-13 12:09:05] load_cfg_ppd:4436 - people_detection: user don't set any region! Turn off detection.
+[1;33m[DEBUG][0m 1702449545:185397 pCommonContext->ucIRState is set to : 0
+-------NOT NOT is_stain_test_needed-----
+dn_switch_restart return :0
+[2023-12-13 12:09:05][40;31m[ERROR][0m[cet][dn_switch_mirror_reconfig]-594: first time do not pause encoding
+[tp_isp_sdk_set_mirror_mode(1358)] hEnable = 0, vEnable = 0
+[2023-12-13 12:09:05][40;31m[ERROR][0m[cet][dn_switch_reconfig]-6826: sw_mode = COMMON
+[2023-12-13 12:09:05][40;31m[ERROR][0m[cet][dn_switch_reconfig]-6831: night_vision_mode = COMMON
+[2023-12-13 12:09:05][40;31m[ERROR][0m[cet][dn_switch_reconfig]-6837: ir_mode = AUTO
+[2023-12-13 12:09:05][40;31m[ERROR][0m[cet][dn_switch_reconfig]-6840: dn_switch_AUTO_thread = TRUE
+[2023-12-13 12:09:05][40;31m[ERROR][0m[cet][dn_switch_reconfig]-6842: dn_switch_SCHED_thread = FALSE
+[2023-12-13 12:09:05][40;31m[ERROR][0m[cet][dn_switch_reconfig]-6846: dn_switch_CONSTANT_thread = FALSE
+tp_isp_sdk_set_light_freq_mode mode is 1, fps_num is 100, fps_den is 6
+[2023-12-13 12:09:05][40;32m[INFO][0m[cet][dn_switch_ir_reconfig]-6376: set timer for switch reconfig success, wait 43s
+[telemetry] poll_curl_status(135): code: 6
+[telemetry] post_get_strategy_cb(554): request_status error or response error
+========================
+@@@@@ IMP_ISP_Tuning_GetFliker_Detect(ret=0) env=[0],value=[0] @@@@@cnt(1)
+========================
+@@@@@ IMP_ISP_Tuning_GetFliker_Detect(ret=0) env=[0],value=[0] @@@@@cnt(2)
