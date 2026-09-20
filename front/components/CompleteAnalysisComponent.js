@@ -21,8 +21,10 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import { useRouter } from 'next/router';
 
 const PROMPT_MAP = {
   1: { title: 'Firmware Identification', desc: 'Magic bytes, architecture signatures, vendor headers' },
@@ -44,7 +46,8 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-const CompleteAnalysisComponent = () => {
+const CompleteAnalysisComponent = ({ onBack }) => {
+  const router = useRouter();
   const [choice, setChoice] = useState('9');
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
@@ -54,6 +57,18 @@ const CompleteAnalysisComponent = () => {
   const [copied, setCopied] = useState(false);
 
   const fileInputRef = useRef(null);
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else {
+      router.push('/dashboard');
+    }
+  };
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -105,7 +120,7 @@ const CompleteAnalysisComponent = () => {
       formData.append('choice', choice);
       formData.append('file', selectedFile);
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
       const response = await fetch(`${apiBase}/get_analysis/`, {
         method: 'POST',
         body: formData,
@@ -116,7 +131,7 @@ const CompleteAnalysisComponent = () => {
         try {
           const errJson = await response.json();
           if (errJson.detail) errorDetail = errJson.detail;
-        } catch (_) {}
+        } catch (_) { }
         throw new Error(errorDetail);
       }
 
@@ -214,7 +229,7 @@ const CompleteAnalysisComponent = () => {
             </Select>
           </FormControl>
 
-          {/* Quick Preset Task Chips */}
+          {/* Quick Preset Task Chips
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
             <Typography variant="caption" sx={{ color: 'text.secondary', alignSelf: 'center', mr: 0.5 }}>
               Popular:
@@ -230,7 +245,7 @@ const CompleteAnalysisComponent = () => {
                 sx={{ borderRadius: '8px', cursor: 'pointer', fontSize: '11.5px', fontWeight: 500 }}
               />
             ))}
-          </Box>
+          </Box> */}
 
           {/* File Upload Zone */}
           <Box>
@@ -250,8 +265,8 @@ const CompleteAnalysisComponent = () => {
                 backgroundColor: dragActive
                   ? 'action.hover'
                   : selectedFile
-                  ? 'background.paper'
-                  : 'background.default',
+                    ? 'background.paper'
+                    : 'background.default',
                 p: 3,
                 textAlign: 'center',
                 cursor: 'pointer',
@@ -321,18 +336,40 @@ const CompleteAnalysisComponent = () => {
             </Box>
           </Box>
 
-          {/* Execute Button */}
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            onClick={handleAnalysis}
-            disabled={loading || !selectedFile}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayArrowIcon />}
-            sx={{ borderRadius: '12px', py: 1.2, fontWeight: 600, alignSelf: 'flex-start', px: 4 }}
-          >
-            {loading ? 'Executing Security Audit...' : 'Run Security Audit'}
-          </Button>
+          {/* Execute Button - Centered and Primary Blue */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mt: 1 }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleAnalysis}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayArrowIcon />}
+              sx={{
+                borderRadius: '12px',
+                py: 1.3,
+                px: 5,
+                fontWeight: 700,
+                fontSize: '15px',
+                textTransform: 'none',
+                backgroundColor: '#2563EB',
+                backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                color: '#FFFFFF !important',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  backgroundColor: '#1D4ED8',
+                  backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+                  boxShadow: '0 6px 20px rgba(37, 99, 235, 0.45)',
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: '#93C5FD',
+                  color: '#FFFFFF !important',
+                },
+              }}
+            >
+              {loading ? 'Executing Security Audit...' : 'Run Security Audit'}
+            </Button>
+          </Box>
         </Box>
       </Paper>
 
@@ -410,6 +447,34 @@ const CompleteAnalysisComponent = () => {
           </Box>
         </Paper>
       )}
+
+      {/* Bottom Back Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 1 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            borderRadius: '12px',
+            px: 3.5,
+            py: 1.1,
+            fontWeight: 600,
+            fontSize: '14px',
+            textTransform: 'none',
+            backgroundColor: '#2563EB',
+            backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            '&:hover': {
+              backgroundColor: '#1D4ED8',
+              backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          Back to Tools Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

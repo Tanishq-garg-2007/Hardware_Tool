@@ -22,7 +22,96 @@ _update_state = {
     "error": None,
     "last_download_time": None,
 }
-_state_lock = threading.Lock()
+_state_lock = threading.RLock()
+_abort_event = threading.Event()
+
+def is_internet_available(timeout: float = 2.0) -> bool:
+    """
+    Checks if an active internet connection is available.
+    Uses socket connections to reliable DNS/HTTP endpoints with a short timeout.
+    Returns False when offline, air-gapped, or network unreachable.
+    """
+    import socket
+    test_endpoints = [
+        ("8.8.8.8", 53),
+        ("1.1.1.1", 53),
+        ("github.com", 443),
+    ]
+    for host, port in test_endpoints:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            sock.connect((host, port))
+            sock.close()
+            return True
+        except (socket.timeout, OSError):
+            continue
+    return False
+
+def auto_sync_if_online(force: bool = False) -> dict:
+    """
+    Intelligent sync logic for CVE scanning:
+    1. Detects if an active internet connection is available.
+    2. If NOT available: returns offline status, no download/sync is attempted,
+       allowing the scan to proceed 100% offline with the existing local database.
+    3. If available: checks if the database needs an update or sync.
+       If missing, downloads/initializes. If outdated, triggers background sync.
+    """
+    online = is_internet_available(timeout=2.0)
+    if not online:
+        return {
+            "online": False,
+            "action": "offline_mode",
+            "message": "Offline mode active: No internet connection detected. Continuing scan with local offline database.",
+            "total_records": count_cves(),
+        }
+
+    cve_count = count_cves()
+    check = check_should_update()
+
+    if cve_count == 0:
+        # Database is completely missing - perform download and sync
+        try:
+            print("[+] Online: CVE database missing, starting download...")
+            _download_and_extract_task(force=True)
+            return {
+                "online": True,
+                "action": "downloaded",
+                "message": "Online: CVE database was missing. Downloaded and indexed NIST NVD database.",
+                "total_records": count_cves(),
+            }
+        except Exception as err:
+            return {
+                "online": True,
+                "action": "error",
+                "message": f"Online: Error downloading initial CVE database: {err}",
+                "total_records": count_cves(),
+            }
+
+    if check["needs_update"] or force:
+        print(f"[+] Online: Database update needed ({check['reason']}). Triggering auto-sync in background...")
+        trigger_database_update(force=force)
+        return {
+            "online": True,
+            "action": "sync_triggered",
+            "message": f"Online: Automatic database sync triggered in background ({check['reason']}).",
+            "total_records": cve_count,
+        }
+
+    # Initialize EPSS dataset if online and table is unpopulated
+    if count_epss_records() == 0:
+        try:
+            print("[+] Online: EPSS table is empty. Auto-initializing FIRST EPSS dataset...")
+            sync_epss_database(force=False)
+        except Exception as epss_err:
+            print(f"[!] Note: Could not auto-initialize EPSS: {epss_err}")
+
+    return {
+        "online": True,
+        "action": "up_to_date",
+        "message": f"Online: Database is already up to date ({cve_count:,} records).",
+        "total_records": cve_count,
+    }
 
 def get_cve_db_dir() -> Path:
     env_path = os.getenv("NVD_DB_DIR", "../data/nvd_db")
@@ -67,11 +156,20 @@ def init_nvd_sqlite(db_path: Path):
         target_hw TEXT
     )
     """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS epss_scores (
+        cve_id TEXT PRIMARY KEY,
+        epss REAL,
+        percentile REAL,
+        score_date TEXT
+    )
+    """)
     cur.execute("CREATE INDEX IF NOT EXISTS idx_cves_id ON cves(cve_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_cves_score ON cves(base_score)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_cpe_vp ON cpe_matches(product, vendor)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_cpe_p ON cpe_matches(product)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_cpe_cve ON cpe_matches(cve_id)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_epss_cve ON epss_scores(cve_id)")
     conn.commit()
     conn.close()
 
@@ -152,6 +250,7 @@ def get_database_status() -> dict:
         state_copy = dict(_update_state)
 
     cve_count = count_cves(db_dir)
+    online = is_internet_available(timeout=1.5)
 
     return {
         "database_type": "NIST National Vulnerability Database (NVD 2.0)",
@@ -168,6 +267,8 @@ def get_database_status() -> dict:
         "days_old": check["days_old"],
         "should_update": check["needs_update"],
         "update_reason": check["reason"],
+        "is_online": online,
+        "connectivity_mode": "Online (Auto-Sync)" if online else "Offline (Local DB)",
         "updater_state": state_copy,
     }
 
@@ -228,6 +329,15 @@ def _download_and_extract_task(force: bool):
     temp_db = db_dir / "nvd_cves.db.tmp"
 
     try:
+        if not is_internet_available(timeout=2.0):
+            with _state_lock:
+                _update_state["is_updating"] = False
+                _update_state["current_step"] = "offline"
+                _update_state["status_message"] = "Offline Mode: No internet connection detected. Continuing with local offline database."
+                _update_state["error"] = "No internet connection detected."
+            print("[!] NVD update cancelled: Offline mode (no internet connection).")
+            return
+
         with _state_lock:
             _update_state["is_updating"] = True
             _update_state["current_step"] = "locating"
@@ -271,6 +381,8 @@ def _download_and_extract_task(force: bool):
         downloaded = 0
         with open(temp_xz, "wb") as f:
             for chunk in resp.iter_content(chunk_size=1024 * 1024 * 2): # 2MB chunks
+                if _abort_event.is_set():
+                    raise InterruptedError("Update was cancelled by the user.")
                 if chunk:
                     f.write(chunk)
                     downloaded += len(chunk)
@@ -294,7 +406,9 @@ def _download_and_extract_task(force: bool):
         conn = sqlite3.connect(str(temp_db))
         cur = conn.cursor()
         cur.execute("PRAGMA synchronous = OFF")
-        cur.execute("PRAGMA journal_mode = MEMORY")
+        cur.execute("PRAGMA journal_mode = OFF")
+        cur.execute("PRAGMA cache_size = -64000")
+        cur.execute("PRAGMA temp_store = MEMORY")
         cur.execute("""
         CREATE TABLE cves (
             cve_id TEXT PRIMARY KEY,
@@ -327,9 +441,12 @@ def _download_and_extract_task(force: bool):
         cve_batch = []
         cpe_batch = []
         total_ingested = 0
+        BATCH_SIZE = 2500
 
         with lzma.open(temp_xz, "rt", encoding="utf-8", errors="replace") as xz_file:
             for it in _stream_cve_items(xz_file):
+                if _abort_event.is_set():
+                    raise InterruptedError("Update was cancelled by the user.")
                 cid = it.get("id")
                 if not cid:
                     continue
@@ -371,22 +488,24 @@ def _download_and_extract_task(force: bool):
                                 crit, target_hw
                             ))
 
-                if len(cve_batch) >= 10000:
+                if len(cve_batch) >= BATCH_SIZE:
                     cur.executemany("INSERT OR REPLACE INTO cves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", cve_batch)
                     cur.executemany("INSERT INTO cpe_matches VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", cpe_batch)
+                    conn.commit()
                     total_ingested += len(cve_batch)
                     cve_batch = []
                     cpe_batch = []
-                    pct = min(55 + int((total_ingested / 380000) * 35), 90)
+                    pct = min(55 + int((total_ingested / 390000) * 35), 90)
                     with _state_lock:
                         _update_state["progress_percent"] = pct
-                        _update_state["status_message"] = f"Indexed {total_ingested:,} CVEs into offline database..."
+                        _update_state["status_message"] = f"Indexed {total_ingested:,} of ~390,000 CVEs into offline database..."
 
         if cve_batch:
             cur.executemany("INSERT OR REPLACE INTO cves VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", cve_batch)
             total_ingested += len(cve_batch)
         if cpe_batch:
             cur.executemany("INSERT INTO cpe_matches VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", cpe_batch)
+        conn.commit()
 
         # 3. Create indices
         with _state_lock:
@@ -451,22 +570,59 @@ def _download_and_extract_task(force: bool):
 
         print(f"[+] NIST NVD Database update completed successfully ({total_ingested:,} CVEs).")
 
-    except Exception as e:
+    except (InterruptedError, Exception) as e:
         if temp_xz.exists():
             try: temp_xz.unlink()
             except Exception: pass
         if temp_db.exists():
             try: temp_db.unlink()
             except Exception: pass
+        is_cancel = isinstance(e, InterruptedError) or _abort_event.is_set() or "cancelled" in str(e).lower()
         with _state_lock:
             _update_state["is_updating"] = False
-            _update_state["current_step"] = "error"
-            _update_state["error"] = str(e)
-            _update_state["status_message"] = f"Update failed: {str(e)}"
-        print(f"[!] NVD update error: {str(e)}")
+            _update_state["current_step"] = "cancelled" if is_cancel else "error"
+            _update_state["error"] = None if is_cancel else str(e)
+            _update_state["status_message"] = "Update was cancelled by the user." if is_cancel else f"Update failed: {str(e)}"
+            _update_state["progress_percent"] = 0
+        if is_cancel:
+            print("[+] NVD update cancelled by user and temporary files cleaned up.")
+        else:
+            print(f"[!] NVD update error: {str(e)}")
+
+def cancel_database_update() -> dict:
+    """Signals any running update or sync task to abort and cleans up temporary files."""
+    global _update_state, _abort_event
+    with _state_lock:
+        is_running = _update_state["is_updating"]
+        if not is_running:
+            pass
+        else:
+            _update_state["status_message"] = "Cancelling update and cleaning up..."
+            _update_state["current_step"] = "cancelling"
+
+    if not is_running:
+        return {
+            "success": False,
+            "message": "No active database update is currently running.",
+            "state": get_database_status(),
+        }
+
+    _abort_event.set()
+    return {
+        "success": True,
+        "message": "Update cancellation requested.",
+        "state": get_database_status(),
+    }
 
 def trigger_database_update(force: bool = False) -> dict:
-    global _update_state
+    global _update_state, _abort_event
+    if not is_internet_available(timeout=2.0):
+        return {
+            "success": False,
+            "message": "Offline Mode: No active internet connection detected. Continuing with existing local database.",
+            "state": get_database_status(),
+        }
+
     with _state_lock:
         if _update_state["is_updating"]:
             return {
@@ -484,6 +640,9 @@ def trigger_database_update(force: bool = False) -> dict:
             "message": f"NVD Database is already up to date ({check['reason']}). Pass force=true to force re-download.",
             "state": get_database_status(),
         }
+
+    # Clear any previous abort signal
+    _abort_event.clear()
 
     # Start update in background daemon thread
     t = threading.Thread(target=_download_and_extract_task, args=(force,), daemon=True)
@@ -575,6 +734,264 @@ def get_cvss(cve_id: str) -> dict:
         "Vector": cve.get("vector"),
         "Error": None
     }
+
+def count_epss_records(db_dir: Path = None) -> int:
+    """Returns the total number of indexed EPSS records in the SQLite database."""
+    db_file = get_nvd_db_path()
+    if not db_file.exists():
+        return 0
+    try:
+        conn = sqlite3.connect(str(db_file), timeout=5)
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM epss_scores")
+        val = cur.fetchone()[0]
+        conn.close()
+        return val
+    except Exception:
+        return 0
+
+def sync_epss_database(force: bool = False, timeout: int = 40) -> dict:
+    """
+    Downloads and ingests the official FIRST EPSS daily feed (epss_scores-current.csv.gz)
+    into the local SQLite database.
+    Offline safe: if no internet, skips gracefully with appropriate status message.
+    """
+    import gzip
+    import csv
+    import io
+
+    db_path = get_nvd_db_path()
+    init_nvd_sqlite(db_path)
+
+    existing_count = count_epss_records()
+    if existing_count > 0 and not force:
+        return {
+            "success": True,
+            "action": "up_to_date",
+            "message": f"EPSS database is already populated ({existing_count:,} records).",
+            "total_records": existing_count,
+        }
+
+    if not is_internet_available(timeout=2.0):
+        return {
+            "success": False,
+            "action": "offline",
+            "message": f"Offline mode: Unable to download EPSS feed. Continuing with {existing_count:,} local records.",
+            "total_records": existing_count,
+        }
+
+    epss_url = os.getenv("EPSS_FEED_URL", "https://epss.cyentia.com/epss_scores-current.csv.gz")
+    print(f"[+] Downloading FIRST EPSS dataset from {epss_url}...")
+
+    try:
+        req = urllib.request.Request(
+            epss_url,
+            headers={"User-Agent": "Hardware-Auditing-Tool/1.0 (Embedded Security Research)"}
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            compressed_data = response.read()
+
+        print(f"[+] Downloaded {len(compressed_data) / 1024 / 1024:.2f} MB. Parsing and inserting into SQLite...")
+
+        conn = sqlite3.connect(str(db_path), timeout=60)
+        cur = conn.cursor()
+        cur.execute("PRAGMA synchronous = OFF")
+        cur.execute("PRAGMA journal_mode = MEMORY")
+
+        score_date = datetime.date.today().isoformat()
+        rows_to_insert = []
+
+        with gzip.GzipFile(fileobj=io.BytesIO(compressed_data)) as gz:
+            text_stream = io.TextIOWrapper(gz, encoding="utf-8", errors="ignore")
+            first_line = text_stream.readline()
+            if first_line.startswith("#") and "score_date:" in first_line:
+                try:
+                    score_date = first_line.split("score_date:")[1].split(",")[0].strip()[:10]
+                except Exception:
+                    pass
+
+            while first_line.startswith("#"):
+                first_line = text_stream.readline()
+
+            reader = csv.reader(text_stream)
+            for row in reader:
+                if len(row) >= 3 and row[0].startswith("CVE-"):
+                    try:
+                        cve = row[0].strip()
+                        epss_val = float(row[1])
+                        pct_val = float(row[2])
+                        rows_to_insert.append((cve, epss_val, pct_val, score_date))
+                    except (ValueError, TypeError):
+                        continue
+
+        cur.executemany("""
+            INSERT OR REPLACE INTO epss_scores (cve_id, epss, percentile, score_date)
+            VALUES (?, ?, ?, ?)
+        """, rows_to_insert)
+
+        conn.commit()
+        conn.close()
+
+        total = count_epss_records()
+        print(f"[+] Successfully indexed {len(rows_to_insert):,} EPSS records into SQLite (total: {total:,}).")
+        return {
+            "success": True,
+            "action": "synced",
+            "message": f"Successfully indexed {len(rows_to_insert):,} EPSS scores.",
+            "total_records": total,
+        }
+    except Exception as e:
+        print(f"[!] Error synchronizing EPSS database: {e}")
+        return {
+            "success": False,
+            "action": "error",
+            "message": f"Error syncing EPSS database: {str(e)}",
+            "total_records": existing_count,
+        }
+
+def get_epss_from_db(cve_id: str) -> dict:
+    """Returns EPSS exploitability score and percentile for a given CVE ID."""
+    if not cve_id or not isinstance(cve_id, str):
+        return {"EPSS_Score": None, "EPSS_Percentile": None, "Error": "Invalid CVE ID"}
+
+    cve_clean = cve_id.strip().upper()
+    db_file = get_nvd_db_path()
+    if db_file.exists():
+        try:
+            conn = sqlite3.connect(str(db_file), timeout=5)
+            cur = conn.cursor()
+            cur.execute("SELECT epss, percentile, score_date FROM epss_scores WHERE cve_id = ?", (cve_clean,))
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                return {
+                    "EPSS_Score": row[0],
+                    "EPSS_Percentile": row[1],
+                    "Date": row[2],
+                    "Error": None
+                }
+        except Exception as e:
+            print(f"[!] SQLite EPSS lookup error: {e}")
+
+    # Online fallback for single newly-disclosed CVE if missing in local DB
+    if is_internet_available(timeout=1.0):
+        try:
+            url = f"https://api.first.org/data/v1/epss?cve={cve_clean}"
+            req = urllib.request.Request(url, headers={"User-Agent": "Hardware-Auditing-Tool/1.0"})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    payload = json.loads(resp.read().decode())
+                    items = payload.get("data", [])
+                    if items:
+                        item = items[0]
+                        epss_val = float(item.get("epss", 0.0))
+                        pct_val = float(item.get("percentile", 0.0))
+                        date_val = item.get("date", "")
+                        try:
+                            conn = sqlite3.connect(str(db_file), timeout=5)
+                            cur = conn.cursor()
+                            cur.execute("INSERT OR REPLACE INTO epss_scores VALUES (?, ?, ?, ?)",
+                                        (cve_clean, epss_val, pct_val, date_val))
+                            conn.commit()
+                            conn.close()
+                        except Exception:
+                            pass
+                        return {
+                            "EPSS_Score": epss_val,
+                            "EPSS_Percentile": pct_val,
+                            "Date": date_val,
+                            "Error": None
+                        }
+        except Exception:
+            pass
+
+    return {
+        "EPSS_Score": None,
+        "EPSS_Percentile": None,
+        "Error": "CVE not found in local EPSS dataset"
+    }
+
+def get_epss_batch_from_db(cve_ids: list) -> dict:
+    """High-speed batch retrieval of EPSS scores for a list of CVE IDs."""
+    if not cve_ids:
+        return {}
+    results = {}
+    clean_ids = [c.strip().upper() for c in cve_ids if c and isinstance(c, str)]
+    db_file = get_nvd_db_path()
+    if not db_file.exists():
+        return {c: {"EPSS_Score": None, "EPSS_Percentile": None, "Error": "Database not found"} for c in clean_ids}
+
+    try:
+        conn = sqlite3.connect(str(db_file), timeout=10)
+        cur = conn.cursor()
+        chunk_size = 500
+        for i in range(0, len(clean_ids), chunk_size):
+            chunk = clean_ids[i:i + chunk_size]
+            placeholders = ",".join("?" for _ in chunk)
+            cur.execute(f"SELECT cve_id, epss, percentile, score_date FROM epss_scores WHERE cve_id IN ({placeholders})", chunk)
+            for r in cur.fetchall():
+                results[r[0]] = {
+                    "EPSS_Score": r[1],
+                    "EPSS_Percentile": r[2],
+                    "Date": r[3],
+                    "Error": None
+                }
+        conn.close()
+    except Exception as e:
+        print(f"[!] Batch EPSS lookup error: {e}")
+
+    # Fill in missing IDs
+    for c in clean_ids:
+        if c not in results:
+            results[c] = {
+                "EPSS_Score": None,
+                "EPSS_Percentile": None,
+                "Error": "CVE not found in local EPSS dataset"
+            }
+    return results
+
+def get_cvss_batch(cve_ids: list) -> dict:
+    """High-speed batch retrieval of CVSS metrics from SQLite NVD."""
+    if not cve_ids:
+        return {}
+    results = {}
+    clean_ids = [c.strip().upper() for c in cve_ids if c and isinstance(c, str)]
+    db_file = get_nvd_db_path()
+    if not db_file.exists():
+        return {c: {"CVE_ID": c, "Base_Score": None, "Severity": "UNRATED", "Error": "DB missing"} for c in clean_ids}
+
+    try:
+        conn = sqlite3.connect(str(db_file), timeout=10)
+        cur = conn.cursor()
+        chunk_size = 500
+        for i in range(0, len(clean_ids), chunk_size):
+            chunk = clean_ids[i:i + chunk_size]
+            placeholders = ",".join("?" for _ in chunk)
+            cur.execute(f"SELECT cve_id, base_score, severity, cvss_version, vector FROM cves WHERE cve_id IN ({placeholders})", chunk)
+            for r in cur.fetchall():
+                results[r[0]] = {
+                    "CVE_ID": r[0],
+                    "Base_Score": r[1],
+                    "Severity": r[2] or "UNRATED",
+                    "CVSS_Version": r[3],
+                    "Vector": r[4],
+                    "Error": None
+                }
+        conn.close()
+    except Exception as e:
+        print(f"[!] Batch CVSS lookup error: {e}")
+
+    for c in clean_ids:
+        if c not in results:
+            results[c] = {
+                "CVE_ID": c,
+                "Base_Score": None,
+                "Severity": "UNRATED",
+                "CVSS_Version": "",
+                "Vector": "",
+                "Error": "CVE not found in local NVD database"
+            }
+    return results
 
 def query_cves_by_product(vendor: str, product: str) -> list:
     """Fetches all CVEs matching a vendor and product from the NVD database."""

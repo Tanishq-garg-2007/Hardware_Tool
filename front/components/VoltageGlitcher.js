@@ -9,16 +9,31 @@ import {
   Divider,
   Alert,
 } from '@mui/material';
+import { useRouter } from 'next/router';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
 import TuneIcon from '@mui/icons-material/Tune';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const VoltageGlitcher = () => {
+const VoltageGlitcher = ({ onBack }) => {
+  const router = useRouter();
   const channelRef = useRef(null);
   const powerOnTimeRef = useRef();
   const powerOffTimeRef = useRef();
   const [freq, setFreq] = useState('');
   const [status, setStatus] = useState(null);
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/dashboard');
+    }
+  };
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -78,8 +93,8 @@ const VoltageGlitcher = () => {
   };
 
   const powerOnTimeHandler = async () => {
-    const pon = powerOnTimeRef.current?.value;
-    const poff = powerOffTimeRef.current?.value;
+    const pon = powerOnTimeRef.current?.value?.trim() || '1';
+    const poff = powerOffTimeRef.current?.value?.trim() || '0.5';
     if (!pon || !poff) return;
     try {
       const resp = await fetch(`${apiBase}/set_volt_custom/${pon}/${poff}`);
@@ -127,7 +142,7 @@ const VoltageGlitcher = () => {
       </Paper>
 
       {/* Frequency & Channel */}
-      <Grid container spacing={2}>
+     {/* <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '16px', backgroundColor: 'background.default', height: '100%' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -170,7 +185,7 @@ const VoltageGlitcher = () => {
             </Box>
           </Paper>
         </Grid>
-      </Grid>
+      </Grid> */}
 
       {/* Custom Glitch Timing */}
       <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '16px', backgroundColor: 'background.default' }}>
@@ -183,6 +198,7 @@ const VoltageGlitcher = () => {
               fullWidth
               size="small"
               label="Power On Time (Seconds)"
+              placeholder="1"
               inputRef={powerOnTimeRef}
               type="number"
               variant="outlined"
@@ -194,6 +210,7 @@ const VoltageGlitcher = () => {
               fullWidth
               size="small"
               label="Power Off Time (Seconds)"
+              placeholder="0.5"
               inputRef={powerOffTimeRef}
               type="number"
               variant="outlined"
@@ -209,6 +226,34 @@ const VoltageGlitcher = () => {
           Apply Custom Pulse Timing
         </Button>
       </Paper>
+
+      {/* Bottom Back Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            borderRadius: '12px',
+            px: 3.5,
+            py: 1.1,
+            fontWeight: 600,
+            fontSize: '14px',
+            textTransform: 'none',
+            backgroundColor: '#2563EB',
+            backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            '&:hover': {
+              backgroundColor: '#1D4ED8',
+              backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

@@ -9,10 +9,13 @@ import {
   Alert,
   Chip,
 } from '@mui/material';
+import { useRouter } from 'next/router';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const DetectBaudrate = ({ setReport }) => {
+const DetectBaudrate = ({ setReport, onBack }) => {
+  const router = useRouter();
   const timeRef = useRef();
   const rebootDelayRef = useRef();
   const [loading, setLoading] = useState(false);
@@ -20,9 +23,21 @@ const DetectBaudrate = ({ setReport }) => {
   const [bestBaud, setBestBaud] = useState(null);
   const [error, setError] = useState(null);
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
   const handleSubmit = async () => {
-    const time = timeRef.current?.value || '5';
-    const rebootDelay = rebootDelayRef.current?.value || '2';
+    const time = timeRef.current?.value?.trim() || '5';
+    const rebootDelay = rebootDelayRef.current?.value?.trim() || '3';
 
     setLoading(true);
     setHasRun(false);
@@ -76,7 +91,7 @@ const DetectBaudrate = ({ setReport }) => {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mt: 1 }}>
           <TextField
             label="Sampling Duration (Sec)"
-            defaultValue="5"
+            placeholder="5"
             size="small"
             type="number"
             inputRef={timeRef}
@@ -85,7 +100,7 @@ const DetectBaudrate = ({ setReport }) => {
           />
           <TextField
             label="Reboot Delay (Sec)"
-            defaultValue="2"
+            placeholder="3"
             size="small"
             type="number"
             inputRef={rebootDelayRef}
@@ -119,7 +134,7 @@ const DetectBaudrate = ({ setReport }) => {
             sx={{ borderRadius: '12px', alignItems: 'center' }}
           >
             <Typography variant="body1" sx={{ fontWeight: 700 }}>
-              Optimal Detected Baudrate: <Chip label={bestBaud} color="success" size="small" sx={{ fontWeight: 700, ml: 1 }} />
+              Detected Baudrate: <Chip label={bestBaud} color="success" size="small" sx={{ fontWeight: 700, ml: 1 }} />
             </Typography>
           </Alert>
         ) : (
@@ -136,6 +151,34 @@ const DetectBaudrate = ({ setReport }) => {
           </Alert>
         )
       )}
+
+      {/* Bottom Back Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            borderRadius: '12px',
+            px: 3.5,
+            py: 1.1,
+            fontWeight: 600,
+            fontSize: '14px',
+            textTransform: 'none',
+            backgroundColor: '#2563EB',
+            backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            '&:hover': {
+              backgroundColor: '#1D4ED8',
+              backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

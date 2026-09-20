@@ -157,12 +157,13 @@ def extract_deterministic_metadata(text: str, choice: int) -> str:
     if choice == 1:  # Firmware Identification
         fields = [
             ("Device Name", [
-                r"(?:Device Name|Name/ID|Product Name):\s*([^\n\r]+)",
-                r"Welcome to\s+([^\n\r!]+)",
-                r"dev_alias:\s*([^\n\r]+)",
-                r"dev_name:\s*([^\n\r]+)"
+                r"(?:Device Name|Product Name):\s*([^\n\r]+)",
+                r"Machine model:\s*([^\n\r]+)",
+                r"dev_name:\s*([^\n\r]+)",
+                r"dev_alias:\s*([^\n\r]+)"
             ]),
             ("Model", [
+                r"Machine model:\s*([^\n\r]+)",
                 r"(?:Model|Device Model|Product Model|dev_model):\s*([^\n\r]+)",
                 r"Board:\s*([^\n\r]+)",
                 r"U-Boot\s+[\d\.]+.*?\)\s+([A-Za-z0-9_\-\(\)\s]+)"
@@ -193,17 +194,20 @@ def extract_deterministic_metadata(text: str, choice: int) -> str:
                 r"Image Type:\s*([^\n\r]+)"
             ]),
             ("Board / SoC", [
+                r"\b(RTS\d+[A-Za-z0-9_]*|Realtek\s+[A-Za-z0-9_]+|BCM\d+|Allwinner\s+[A-Za-z0-9_]+|Ingenic\s+[A-Za-z0-9_]+|Broadcom\s+[A-Za-z0-9_]+)\b",
                 r"(?:Board / SoC|SoC|Platform):\s*([^\n\r]+)",
-                r"CPU0 revision is:\s*[0-9a-fA-F]+\s*\(([^\)]+)\)",
-                r"CPU:\s*([^\n\r]+)",
-                r"\b(Ingenic\s+[A-Za-z0-9_]+|Broadcom\s+[A-Za-z0-9_]+|Realtek\s+[A-Za-z0-9_]+)\b"
+                r"CPU:\s*([^\n\r]+)"
             ])
         ]
         for label, patterns in fields:
             for p in patterns:
                 m = re.search(p, text, re.IGNORECASE)
                 if m:
-                    lines_out.append(f"{label}: {m.group(1).strip() if m.groups() else m.group(0).strip()}")
+                    val = m.group(1).strip() if m.groups() else m.group(0).strip()
+                    # Filter out generic license lines or code statements
+                    if any(bad in val.lower() for bad in ("gnu.org", "license", "redistribute", "snd_soc_register_card")):
+                        continue
+                    lines_out.append(f"{label}: {val}")
                     break
 
     elif choice == 2:  # Package & Artifacts
@@ -239,7 +243,7 @@ def extract_deterministic_metadata(text: str, choice: int) -> str:
         if comp:
             lines_out.append(f"Compression: {', '.join(sorted(set(comp)))}")
 
-        flash = re.search(r"\b(EN25QH\w*|W25Q\w*|SPI NOR|SPI NAND|SF: Detected \w+)\b", text, re.I)
+        flash = re.search(r"\b(EN25QH\w*|W25Q\w*|GD25Q\w*|MX25L\w*|SPI NOR|SPI NAND|SF: Detected \w+|SPI Flash|find flash: \w+)\b", text, re.I)
         if flash:
             lines_out.append(f"Storage Medium: {flash.group(0)}")
 
@@ -262,7 +266,7 @@ def extract_deterministic_metadata(text: str, choice: int) -> str:
         if m_k:
             lines_out.append(f"Kernel Version: {m_k.group(1).strip()}")
 
-        arch = re.search(r"\b(ARM Cortex-A\d+|aarch64|ARMv\d+[\w\-]*|MIPS\d*|Ingenic XBurst|x86_64|RISC-V|sun\d+i)\b", text, re.I)
+        arch = re.search(r"\b(ARM Cortex-A\d+|aarch64|ARMv\d+[\w\-]*|MIPS\d*|Ingenic XBurst|x86_64|RISC-V|sun\d+i|MT76\d+[\w_]*|Ralink\s*APSoC|Ralink)\b", text, re.I)
         if arch:
             lines_out.append(f"CPU Architecture: {arch.group(0)}")
 
@@ -341,6 +345,22 @@ def extract_deterministic_metadata(text: str, choice: int) -> str:
         proto = re.findall(r"\b(HTTP/1\.1|HTTPS|TLS \d\.\d|MQTT|RTSP|CoAP|DNS|SSH|Telnet|TCP|UDP|ONVIF)\b", text, re.I)
         if proto:
             lines_out.append(f"Protocols: {', '.join(sorted(set(proto)))}")
+
+        net_ifs = re.findall(r"\b(eth%?d?|wlan\d*|ra\d*|br-\w+|lo)\b", text, re.I)
+        if net_ifs:
+            lines_out.append(f"Network Interfaces: {', '.join(sorted(set(net_ifs)))}")
+
+        drivers = re.findall(r"([A-Za-z0-9_\-]+\s+Ethernet driver[^\n\r]*)", text, re.I)
+        if drivers:
+            lines_out.append(f"Ethernet Driver: {drivers[0].strip()}")
+
+        macs = re.findall(r"\b(?:[0-9a-fA-F]{2}[:-]){5}[0-9a-fA-F]{2}\b", text)
+        if macs:
+            lines_out.append(f"MAC Address: {', '.join(sorted(set(macs)))}")
+
+        ip_match = re.findall(r"\b(?:ipaddr|ip)\s*=\s*(\d{1,3}(?:\.\d{1,3}){3})\b", text, re.I)
+        if ip_match:
+            lines_out.append(f"Configured IP: {', '.join(set(ip_match))}")
 
         daemons = re.findall(r"\b(dropbear|sshd|lighttpd|mosquitto|telnetd|httpd|apache|nginx|dnsmasq|rtsp-streamer|openapid|onvif|wlan-manager|hostapd)\b[^\n\r]*", text, re.I)
         if daemons:
@@ -485,9 +505,9 @@ def run(choice: int, file_path: str):
     print("Step 2: Running high-speed deterministic pattern extractor...")
     deterministic_result = extract_deterministic_metadata(full_text, choice)
 
-    # If deterministic extractor found rich metadata, return immediately (<5ms)
-    if deterministic_result and len(deterministic_result.strip()) > 25:
-        print(f"Deterministic extraction succeeded in <5ms for Task {choice}.")
+    # If deterministic extractor found extensive metadata (>1000 chars), return immediately
+    if deterministic_result and len(deterministic_result.strip()) > 1000:
+        print(f"Deterministic extraction succeeded with comprehensive data (>1000 chars) for Task {choice}.")
         return deterministic_result
 
     # Fallback to model-based extraction for ambiguous / unstructured strings
@@ -502,36 +522,48 @@ def run(choice: int, file_path: str):
         analysis_results.append(deterministic_result)
 
     task_prompt = PROMPT_MAP.get(choice, {}).get('task', 'Analyze firmware.')
+    models_to_try = [MODEL_NAME]
+    if MODEL_NAME != "qwen3:0.6b":
+        models_to_try.append("qwen3:0.6b")
 
     try:
-        client = ollama.Client(timeout=25)
+        client = ollama.Client(timeout=90)
         for i, chunk in enumerate(chunks):
-            print(f"Querying SLM with high-signal context (timeout: 25s)...")
-            response = client.chat(
-                model=MODEL_NAME,
-                messages=[
-                    {'role': 'system', 'content': SYSTEM_INSTRUCTION + " Do NOT output thinking, reasoning steps, or scratchpad. Immediately output Key: Value pairs."},
-                    {'role': 'user', 'content': f"TASK: {task_prompt}\n\nDATA:\n{chunk}"}
-                ],
-                options={'num_predict': 300, 'temperature': 0.1, 'num_thread': 3}
-            )
-
             content = ""
-            msg = getattr(response, "message", None)
-            if msg:
-                content = getattr(msg, "content", "") or ""
-            elif isinstance(response, dict):
-                content = response.get("message", {}).get("content", "")
+            for mdl in models_to_try:
+                try:
+                    chat_kwargs = {
+                        "model": mdl,
+                        "messages": [
+                            {'role': 'system', 'content': SYSTEM_INSTRUCTION + " Do NOT output thinking, reasoning steps, or scratchpad. Immediately output Key: Value pairs."},
+                            {'role': 'user', 'content': f"TASK: {task_prompt}\n\nDATA:\n{chunk}"}
+                        ],
+                        "options": {'num_predict': 200, 'temperature': 0.1, 'num_thread': 3}
+                    }
 
-            # Strip thinking tags and process lines
-            content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
-            if "Thinking Process:" in content:
-                # Keep only content after thinking or extract KV lines
-                kv_lines = [l.strip() for l in content.splitlines() if ":" in l and len(l.split(":")[0].split()) <= 4 and not l.strip().startswith("*")]
-                if kv_lines:
-                    content = "\n".join(kv_lines)
-                else:
-                    content = ""
+                    try:
+                        response = client.chat(**chat_kwargs, think=False)
+                    except (TypeError, Exception):
+                        response = client.chat(**chat_kwargs)
+
+                    msg = getattr(response, "message", None)
+                    if msg:
+                        content = getattr(msg, "content", "") or ""
+                    elif isinstance(response, dict):
+                        content = response.get("message", {}).get("content", "") or ""
+
+                    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
+                    if not content and msg and getattr(msg, "thinking", None):
+                        # Extract final KV lines from thinking if content was empty
+                        kv_lines = [l.strip() for l in msg.thinking.splitlines() if ":" in l and len(l.split(":")[0].split()) <= 4 and not l.strip().startswith(("*", "1.", "2."))]
+                        if kv_lines:
+                            content = "\n".join(kv_lines[-6:])
+
+                    if content:
+                        break
+                except Exception as me:
+                    print(f"Model {mdl} query note: {me}")
+                    continue
 
             if content and "Not available" not in content and "N/A" not in content[:30]:
                 analysis_results.append(content)

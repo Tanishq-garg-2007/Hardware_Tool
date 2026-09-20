@@ -74,23 +74,21 @@ def get_uart_port() -> str:
         return custom_port
 
     if os.name != "nt":
-        # Candidate ports in priority order for Raspberry Pi 5 & Linux
+        # 1. Prioritize connected USB-to-UART adapters (CP2102, FTDI, CH340, CDC-ACM)
+        usb_ports = sorted(glob.glob("/dev/ttyUSB*") + glob.glob("/dev/ttyACM*"))
+        for port in usb_ports:
+            if os.path.exists(port):
+                return port
+
+        # 2. Check 40-pin GPIO hardware UART on Raspberry Pi / Linux
         candidates = [
-            "/dev/serial0",   # Official OS symlink to primary hardware UART
+            "/dev/serial0",   # Official symlink to primary UART on GPIO 14/15
             "/dev/ttyAMA0",   # Direct PL011 UART on GPIO 14/15
-            "/dev/ttyUSB0",   # CP2102, FTDI, CH340 USB dongle
-            "/dev/ttyUSB1",
-            "/dev/ttyACM0",   # CDC-ACM USB serial dongle
-            "/dev/ttyS0",     # Legacy Pi 3/4 mini-UART (if present)
+            "/dev/ttyS0",     # Legacy mini-UART
         ]
         for port in candidates:
             if os.path.exists(port):
                 return port
-
-        # Check glob for any other usb serial ports
-        usb_ports = glob.glob("/dev/ttyUSB*") + glob.glob("/dev/ttyACM*")
-        if usb_ports:
-            return usb_ports[0]
 
         # Default Linux fallback
         return "/dev/serial0" if IS_PI_5 else "/dev/ttyS0"

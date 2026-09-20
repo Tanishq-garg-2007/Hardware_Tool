@@ -510,17 +510,19 @@ def search_default_credentials(dirc):
                 finally:
                     signal.alarm(0)  # Disable the alarm
                     
-def run_entropy_script(firmware_file, block_size=None):
+def run_entropy_script(firmware_file, block_size=None, output_dir=None):
     """
     Runs the entropy.py script with the specified firmware file and optional block size.
     """
     try:
-        entropy_script = os.path.join(os.path.dirname(__file__) or ".", "entropy.py")
-        if block_size is None:
-            result = subprocess.run([sys.executable, entropy_script, firmware_file], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        else:
-            result = subprocess.run([sys.executable, entropy_script, firmware_file, '--chunk_size', str(block_size)], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
+        current_dir = os.path.dirname(os.path.abspath(__file__)) or "."
+        entropy_script = os.path.join(current_dir, "entropy.py")
+        cmd = [sys.executable, entropy_script, firmware_file]
+        if output_dir:
+            cmd.extend(['--output_dir', str(output_dir)])
+        if block_size is not None:
+            cmd.extend(['--chunk_size', str(block_size)])
+        result = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(result.stdout.decode())
         print(result.stderr.decode())
     except subprocess.CalledProcessError as e:
@@ -529,26 +531,32 @@ def run_entropy_script(firmware_file, block_size=None):
                 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: FirmAudit.py <firmware_file> [-info | -E | -B <block_size>]")
+        print("Usage: FirmAudit.py <firmware_file> [-info | -E | -B <block_size>] [--output_dir <dir>]")
         sys.exit(1)
 
     filepath = sys.argv[1]
     tempname = os.path.basename(filepath)
     output = os.path.splitext(tempname)[0]
 
-    if len(sys.argv) == 3 and sys.argv[2] == '-info':
+    output_dir = None
+    if '--output_dir' in sys.argv:
+        idx_o = sys.argv.index('--output_dir')
+        if idx_o + 1 < len(sys.argv):
+            output_dir = sys.argv[idx_o + 1]
+
+    if len(sys.argv) >= 3 and sys.argv[2] == '-info':
         # Display info only
         run_extractor('-i', filepath)
         sys.exit(0)
-    elif len(sys.argv) == 3 and sys.argv[2] == '-E':
+    elif len(sys.argv) >= 3 and sys.argv[2] == '-E':
         # Run the entropy.py script
-        run_entropy_script(filepath)
+        run_entropy_script(filepath, output_dir=output_dir)
         sys.exit(0)
-    elif len(sys.argv) == 4 and sys.argv[2] == '-B':
+    elif len(sys.argv) >= 4 and sys.argv[2] == '-B':
         try:
             block_size = int(sys.argv[3])
             # Run the entropy.py script with block size
-            run_entropy_script(filepath, block_size)
+            run_entropy_script(filepath, block_size=block_size, output_dir=output_dir)
         except ValueError:
             print("Block size must be an integer.")
             sys.exit(1)

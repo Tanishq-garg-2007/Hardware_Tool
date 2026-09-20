@@ -5,7 +5,8 @@ import {
 } from '@mui/material';
 
 import {
-    Chat as ChatIcon,
+    SmartToyRounded as BotIcon,
+    ChatRounded as ChatIcon,
     Minimize as MinimizeIcon,
     Close as CloseIcon,
     Send as SendIcon,
@@ -48,11 +49,14 @@ function renderInlineFormatted(text) {
 
 // Markdown Formatter Component to compile structured LLM responses
 const FormattedMessage = ({ text, isUser }) => {
+    if (!text) return null;
     if (isUser) {
         return <Typography variant="body2" sx={{ color: 'white', whiteSpace: 'pre-wrap' }}>{text}</Typography>;
     }
 
-    const lines = text.split('\n');
+    // Strip internal thinking tags from thinking models
+    const cleanedText = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim() || text;
+    const lines = cleanedText.split('\n');
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, fontSize: '0.9rem', lineHeight: 1.6, color: '#0F172A' }}>
             {lines.map((line, idx) => {
@@ -178,7 +182,9 @@ const ChatBot = () => {
                         role: m.role,
                         content: m.content
                     })),
-                    stream: true
+                    stream: true,
+                    think: false,
+                    options: { num_predict: 350, temperature: 0.2 }
                 })
             });
 
@@ -229,19 +235,32 @@ const ChatBot = () => {
         <Box sx={{ position: "fixed", bottom: 24, right: 24, zIndex: 3000 }}>
             {!isOpen && (
                 <Zoom in>
-                    <Fab 
-                        color="primary" 
-                        onClick={() => setIsOpen(true)} 
-                        sx={{ 
-                            width: 65, 
-                            height: 65,
-                            boxShadow: "0 8px 30px rgba(37, 99, 235, 0.35)",
-                            bgcolor: "primary.main",
-                            "&:hover": { bgcolor: "#1d4ed8" }
-                        }}
-                    >
-                        <ChatIcon sx={{ fontSize: 30 }} />
-                    </Fab>
+                    <Tooltip title="IoT Lab AI Assistant" placement="left" arrow>
+                        <Fab 
+                            color="primary" 
+                            onClick={() => setIsOpen(true)} 
+                            aria-label="Open AI Assistant"
+                            sx={{ 
+                                width: 60, 
+                                height: 60,
+                                borderRadius: "50%",
+                                boxShadow: "0 10px 28px rgba(37, 99, 235, 0.4), 0 2px 8px rgba(0, 0, 0, 0.08)",
+                                background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)",
+                                color: "#FFFFFF",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                                "&:hover": { 
+                                    background: "linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)",
+                                    transform: "translateY(-3px) scale(1.05)",
+                                    boxShadow: "0 14px 34px rgba(37, 99, 235, 0.5), 0 4px 12px rgba(0, 0, 0, 0.12)",
+                                }
+                            }}
+                        >
+                            <BotIcon sx={{ fontSize: 32, color: "#FFFFFF", display: "block" }} />
+                        </Fab>
+                    </Tooltip>
                 </Zoom>
             )}
 
@@ -271,8 +290,8 @@ const ChatBot = () => {
                         borderBottom: "1px solid rgba(255,255,255,0.1)"
                     }}>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                            <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main", fontSize: "0.85rem", fontWeight: 700 }}>
-                                AI
+                            <Avatar sx={{ width: 34, height: 34, bgcolor: "primary.main" }}>
+                                <BotIcon sx={{ fontSize: 20, color: "#FFFFFF" }} />
                             </Avatar>
 
                             <Box>

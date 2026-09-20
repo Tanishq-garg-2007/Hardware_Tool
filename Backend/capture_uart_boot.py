@@ -29,14 +29,22 @@ RELAY_PIN = RELAY_POWER_PIN
 OUTPUT_FILE = "uart_logs/uart_boot_log.txt"
 
 # ---------------- GPIO SETUP ---------------- #
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)
+def init_gpio():
+    if GPIO is None:
+        return
+    try:
+        if GPIO.getmode() is None:
+            GPIO.setwarnings(False)
+            GPIO.setmode(GPIO.BCM)
+        GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)
+    except Exception as e:
+        print(f"[WARN] GPIO setup on pin {RELAY_PIN}: {e}")
 
 
 # ---------------- RELAY CONTROL ---------------- #
 def force_relay_toggle(power_delay):
     print("[INFO] Toggling relay...")
+    init_gpio()
     # Power OFF
     GPIO.output(RELAY_PIN, GPIO.LOW)
     sleep(power_delay)
@@ -65,13 +73,14 @@ def capture_boot_output(baud_rate, delay, power_delay):
         return f"[ERROR] Failed to open serial port {port}: {e}"
 
     sleep(0.2)   # let UART settle
+    init_gpio()
 
     print("[STEP] POWER OFF")
-    GPIO.output(6, GPIO.LOW)
+    GPIO.output(RELAY_PIN, GPIO.LOW)
     sleep(power_delay)
 
     print("[STEP] POWER ON")
-    GPIO.output(6, GPIO.HIGH)
+    GPIO.output(RELAY_PIN, GPIO.HIGH)
 
     print("[STEP] START READING IMMEDIATELY")
 

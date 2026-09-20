@@ -2,21 +2,18 @@ import subprocess
 import binwalk
 
 def list_device_call(speed):
-    process = subprocess.Popen(["bash", "list_flash.sh", speed], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    process.wait()
-    result = process.communicate()
-    if result[0] == "error":
+    process = subprocess.Popen(["bash", "list_flash.sh", str(speed)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0 or "error" in stdout.lower():
         return '{"error" : "error in probing"}'
-    size = result[0]
-    return size
+    return stdout
 
 def dump_firm_call(speed, firm_name, FIRM_DIR):
     print("starting dumping")
-    process = subprocess.Popen(["bash", "dump_flash.sh", speed, firm_name, FIRM_DIR], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    process.wait()
-    result = process.communicate()
-    print("done dump firm call", result)
-    if result[0] == "failed":
+    process = subprocess.Popen(["bash", "dump_flash.sh", str(speed), firm_name, FIRM_DIR], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    stdout, stderr = process.communicate()
+    print("done dump firm call", stdout)
+    if process.returncode != 0 or "failed dump" in stdout:
         return '{"error" : "error in dumping"}'
     return '{"data" : "success"}'
 

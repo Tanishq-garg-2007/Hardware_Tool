@@ -1,77 +1,79 @@
-import json
+import os
 import re
+import json
 from typing import List, Dict, Any
 
-# 1. Lazy load the 21.5 MB local EPSS dataset into memory
-EPSS_INDEX = None
+from EPSS_CVSS_Extract import get_epss, get_cvss_v2
 
-def _load_epss_lazy():
-    global EPSS_INDEX
-    if EPSS_INDEX is not None:
-        return
-        
-    EPSS_INDEX = {}
-    try:
-        with open("epss.json", "r", encoding="utf-8") as f:
-            EPSS_RAW = json.load(f)
-        # The file contains a JSON array directly: [{"cve": "...", "epss": ...}]
-        EPSS_LIST = EPSS_RAW.get("data", []) if isinstance(EPSS_RAW, dict) else EPSS_RAW
-        for item in EPSS_LIST:
-            EPSS_INDEX[item["cve"]] = item
-    except FileNotFoundError:
-        print("[!] epss.json not found. EPSS scores will be N/A.")
-    except json.JSONDecodeError as e:
-        print(f"[!] epss.json is not a valid JSON file. Error: {e}")
-
-def get_epss(cve_id: str) -> Dict[str, Any]:
-    _load_epss_lazy()
-    item = EPSS_INDEX.get(cve_id)
-    if not item:
-        return {"EPSS_Score": None, "EPSS_Percentile": None, "Error": "CVE not found in local EPSS dataset"}
-    try:
-        return {
-            "EPSS_Score": float(item.get("epss", 0.0)),
-            "EPSS_Percentile": float(item.get("percentile", 0.0)),
-            "Error": None,
-        }
-    except Exception as e:
-        return {"EPSS_Score": None, "EPSS_Percentile": None, "Error": str(e)}
 
 def compute_vulnerabilities1(filename: str = "output.txt") -> List[Dict[str, Any]]:
+    """
+    Parses scanner output (JSON array or raw text) and enriches all CVE entries
+    with CVSS base scores and FIRST EPSS exploitability probabilities from SQLite.
+    """
     results_map = {}
     
-    # 2. Extract CVSS directly from the scanner's JSON output (100% offline from MITRE db_temp)
-    try:
-        with open(filename, 'r', encoding='utf-8') as file:
-            try:
-                data = json.load(file)
-                for item in data:
-                    cve_id = item.get("cve_id")
-                    if cve_id:
-                        bs = item.get("base_score")
-                        results_map[cve_id] = bs
-            except json.JSONDecodeError:
-                # Fallback if it's not JSON
-                file.seek(0)
-                for line in file:
-                    match_fallback = re.search(r'(CVE-\d{4}-\d{4,})', line)
-                    if match_fallback:
-                        cve_id = match_fallback.group(1)
-                        if cve_id not in results_map:
-                            results_map[cve_id] = "N/A"
-                        
-    except FileNotFoundError:
+    if not os.path.exists(filename):
         print(f"Error: The file '{filename}' was not found.")
         return []
 
-    # 3. Combine them
+    try:
+        with open(filename, "r", encoding="utf-8", errors="ignore") as file:
+            content = file.read()
+            try:
+                data = json.loads(content)
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict):
+                            cid = item.get("cve_id") or item.get("id") or item.get("cve")
+                            if cid:
+                                cve_clean = str(cid).strip().upper()
+                                bs = item.get("base_score") or item.get("baseScore")
+                                results_map[cve_clean] = bs
+            except Exception:
+                pass
+
+            if not results_map:
+                for line in content.splitlines():
+                    match_fallback = re.search(r'(CVE-\d{4}-\d{4,})', line, re.IGNORECASE)
+                    if match_fallback:
+                        cve_id = match_fallback.group(1).upper()
+                        if cve_id not in results_map:
+                            results_map[cve_id] = None
+    except Exception as e:
+        print(f"Error: Unable to process '{filename}': {e}")
+        return []
+
+    if not results_map:
+        return []
+
+    cve_list = list(results_map.keys())
+
+    # High-speed batch lookup
+    cvss_batch = {}
+    epss_batch = {}
+    try:
+        from cve_updater import get_cvss_batch, get_epss_batch_from_db
+        cvss_batch = get_cvss_batch(cve_list)
+        epss_batch = get_epss_batch_from_db(cve_list)
+    except Exception:
+        pass
+
     results = []
-    for cve, base_score in results_map.items():
-        epss_info = get_epss(cve)
-        
+    for cve, parsed_score in results_map.items():
+        cvss_info = cvss_batch.get(cve) or get_cvss_v2(cve)
+        epss_info = epss_batch.get(cve) or get_epss(cve)
+
+        score_val = parsed_score
+        if score_val is None or score_val in (0.0, "0.0", "", "N/A"):
+            score_val = cvss_info.get("Base_Score")
+            if score_val is None:
+                score_val = "N/A"
+
         item = {
             "id": cve,
-            "baseScore": base_score if (base_score != 0.0 and base_score != "0.0") else "N/A",
+            "baseScore": score_val,
+            "severity": cvss_info.get("Severity", "UNRATED"),
             "epssScore": epss_info.get("EPSS_Score"),
             "epssPercentile": epss_info.get("EPSS_Percentile"),
             "epssError": epss_info.get("Error"),
@@ -79,6 +81,7 @@ def compute_vulnerabilities1(filename: str = "output.txt") -> List[Dict[str, Any
         results.append(item)
         
     return results
+
 
 if __name__ == "__main__":
     import sys

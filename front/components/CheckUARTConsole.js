@@ -8,23 +8,32 @@ import {
   Paper,
   Alert,
 } from '@mui/material';
+import { useRouter } from 'next/router';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const CheckUARTConsole = () => {
+const CheckUARTConsole = ({ onBack }) => {
+  const router = useRouter();
   const baudrateRef = useRef();
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
-    const baudrate = baudrateRef.current?.value.trim();
-
-    if (!baudrate) {
-      setError('Please enter a baudrate first.');
-      setResult(null);
-      return;
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/dashboard');
     }
+  };
+
+  const handleSubmit = async () => {
+    const baudrate = baudrateRef.current?.value?.trim() || '115200';
 
     try {
       setLoading(true);
@@ -32,7 +41,7 @@ const CheckUARTConsole = () => {
       setResult(null);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/check_uart_console/${baudrate}`
+        `${process.env.NEXT_PUBLIC_API_URL}/check_uart_console/${baudrate}?power_delay=3&listen_time=5`
       );
 
       if (!response.ok) {
@@ -65,14 +74,14 @@ const CheckUARTConsole = () => {
           <TerminalIcon color="primary" /> Check for Interactive UART Console
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Sends interactive newline keystrokes (Enter / Return) over UART to check for responsive shell prompts (e.g. root, sh, login).
+          Sends interactive newline keystrokes over UART to check for responsive shell prompts (e.g. root, sh, login, U-Boot).
         </Typography>
 
         <TextField
           fullWidth
           size="small"
-          label="Baudrate (e.g. 115200, 57600)"
-          defaultValue="115200"
+          label="Baudrate"
+          placeholder="115200"
           inputRef={baudrateRef}
           type="number"
           variant="outlined"
@@ -103,8 +112,8 @@ const CheckUARTConsole = () => {
             !result.success
               ? 'error'
               : result.is_available
-              ? 'success'
-              : 'warning'
+                ? 'success'
+                : 'warning'
           }
           sx={{ borderRadius: '12px', alignItems: 'flex-start' }}
         >
@@ -112,8 +121,8 @@ const CheckUARTConsole = () => {
             {!result.success
               ? 'UART Communication Error'
               : result.is_available
-              ? 'Interactive UART Console Available'
-              : 'No Interactive Console Detected'}
+                ? 'Interactive UART Console Available'
+                : 'No Interactive Console Detected'}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             {result.message || result.data}
@@ -128,7 +137,7 @@ const CheckUARTConsole = () => {
                 backgroundColor: 'background.paper',
                 fontSize: '11px',
                 fontFamily: 'monospace',
-                maxHeight: '120px',
+                maxHeight: '160px',
                 overflowY: 'auto',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
@@ -139,6 +148,34 @@ const CheckUARTConsole = () => {
           )}
         </Alert>
       )}
+
+      {/* Bottom Back Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            borderRadius: '12px',
+            px: 3.5,
+            py: 1.1,
+            fontWeight: 600,
+            fontSize: '14px',
+            textTransform: 'none',
+            backgroundColor: '#2563EB',
+            backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            '&:hover': {
+              backgroundColor: '#1D4ED8',
+              backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

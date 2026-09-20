@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/router';
 import axios from 'axios';
 import {
   Box,
@@ -20,6 +21,7 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SearchIcon from '@mui/icons-material/Search';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
@@ -27,13 +29,27 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ReplayIcon from '@mui/icons-material/Replay';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SendIcon from '@mui/icons-material/Send';
 
-const FileAnalysisComponent = () => {
+const FileAnalysisComponent = ({ onBack }) => {
+  const router = useRouter();
   const [selectedFiles, setSelectedFiles] = useState([]);
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else {
+      router.push('/dashboard');
+    }
+  };
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
@@ -48,6 +64,7 @@ const FileAnalysisComponent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [lastSearchedQuery, setLastSearchedQuery] = useState('');
 
   // Chat state
   const [chatQuery, setChatQuery] = useState('');
@@ -123,17 +140,19 @@ const FileAnalysisComponent = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
     setSearching(true);
     setAlertInfo(null);
+    setLastSearchedQuery(trimmed);
 
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/search-files/`, {
-        params: { query: searchQuery }
+        params: { query: trimmed }
       });
       setSearchResults(response.data.results || []);
       if (!response.data.results || response.data.results.length === 0) {
-        setAlertInfo({ type: 'info', message: `No matches found for "${searchQuery}".` });
+        setAlertInfo({ type: 'info', message: `No matches found for "${trimmed}".` });
       }
     } catch (error) {
       setAlertInfo({ type: 'error', message: 'Search failed. Make sure you indexed the log files first.' });
@@ -254,15 +273,6 @@ const FileAnalysisComponent = () => {
               border: '1px solid #FECACA',
               px: 0.5
             }}
-          />
-        )}
-        {indexingStatus === 'idle' && (
-          <Chip
-            icon={<AutoAwesomeIcon sx={{ fontSize: '16px !important' }} />}
-            label="Neural AI & Regex Search"
-            color="primary"
-            variant="outlined"
-            sx={{ borderRadius: '10px', fontWeight: 600 }}
           />
         )}
       </Box>
@@ -464,7 +474,27 @@ const FileAnalysisComponent = () => {
             onClick={handleUploadAndMerge}
             disabled={uploading || selectedFiles.length === 0}
             startIcon={uploading ? <CircularProgress size={18} color="inherit" /> : <CloudUploadIcon />}
-            sx={{ borderRadius: '10px', px: 3, fontWeight: 600 }}
+            sx={{
+              borderRadius: '10px',
+              px: 3,
+              fontWeight: 700,
+              backgroundColor: '#2563EB',
+              backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+              color: '#FFFFFF !important',
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                backgroundColor: '#1D4ED8',
+                backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+                boxShadow: '0 6px 20px rgba(37, 99, 235, 0.45)',
+              },
+              '&.Mui-disabled': {
+                backgroundColor: '#2563EB !important',
+                color: '#FFFFFF !important',
+                opacity: 0.65,
+                boxShadow: 'none',
+              },
+            }}
           >
             {uploading ? 'Merging & Indexing Files...' : 'Index & Prepare for Analysis'}
           </Button>
@@ -514,9 +544,16 @@ const FileAnalysisComponent = () => {
                 <Chip
                   size="small"
                   label="Local LLM"
-                  color="default"
-                  variant="outlined"
-                  sx={{ borderRadius: '6px' }}
+                  sx={{
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '11px',
+                    backgroundColor: '#2563EB',
+                    color: '#FFFFFF',
+                    px: 0.5,
+                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+                    '& .MuiChip-label': { px: 1 }
+                  }}
                 />
               )}
             </Box>
@@ -652,7 +689,7 @@ const FileAnalysisComponent = () => {
                     <>
                       <CloudUploadIcon sx={{ color: 'text.secondary', fontSize: 32 }} />
                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                        Upload and click "Index & Prepare" above to vectorize your log files before chatting.
+                        Upload and click &quot;Index &amp; Prepare&quot; above to vectorize your log files before chatting.
                       </Typography>
                     </>
                   )}
@@ -684,6 +721,9 @@ const FileAnalysisComponent = () => {
               {searchResults.length > 0 && (
                 <Chip size="small" label={`${searchResults.length} matches`} color="success" variant="outlined" sx={{ borderRadius: '6px' }} />
               )}
+              {lastSearchedQuery && !searching && searchResults.length === 0 && (
+                <Chip size="small" label="0 matches" color="default" variant="outlined" sx={{ borderRadius: '6px' }} />
+              )}
             </Box>
 
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
@@ -692,7 +732,13 @@ const FileAnalysisComponent = () => {
                 size="small"
                 placeholder="Search strings, tokens, errors (e.g., failed, kernel, eth0)..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (!e.target.value) {
+                    setSearchResults([]);
+                    setLastSearchedQuery('');
+                  }
+                }}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: 'background.default' } }}
               />
@@ -700,7 +746,27 @@ const FileAnalysisComponent = () => {
                 variant="contained"
                 onClick={handleSearch}
                 disabled={searching || !searchQuery.trim()}
-                sx={{ borderRadius: '12px', px: 2.5, fontWeight: 600 }}
+                sx={{
+                  borderRadius: '12px',
+                  px: 3,
+                  fontWeight: 700,
+                  backgroundColor: '#2563EB',
+                  backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                  color: '#FFFFFF !important',
+                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: '#1D4ED8',
+                    backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+                    boxShadow: '0 6px 20px rgba(37, 99, 235, 0.45)',
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: '#2563EB !important',
+                    color: '#FFFFFF !important',
+                    opacity: 0.65,
+                    boxShadow: 'none',
+                  },
+                }}
               >
                 {searching ? <CircularProgress size={18} color="inherit" /> : 'Find'}
               </Button>
@@ -763,7 +829,7 @@ const FileAnalysisComponent = () => {
                           borderColor: 'divider',
                         }}
                       >
-                        {highlightMatch(res.content, searchQuery)}
+                        {highlightMatch(res.content, lastSearchedQuery || searchQuery)}
                       </Typography>
                     </ListItem>
                   ))}
@@ -777,21 +843,70 @@ const FileAnalysisComponent = () => {
                     borderColor: 'divider',
                     borderRadius: '12px',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     p: 3,
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    gap: 1
                   }}
                 >
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    {searching ? 'Querying index...' : 'Enter a search term above to locate specific occurrences across indexed logs.'}
-                  </Typography>
+                  {searching ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CircularProgress size={18} />
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Querying index...
+                      </Typography>
+                    </Box>
+                  ) : lastSearchedQuery ? (
+                    <>
+                      <SearchOffIcon sx={{ fontSize: 36, color: 'text.secondary', mb: 0.5 }} />
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        Word not found: &ldquo;{lastSearchedQuery}&rdquo;
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary', maxWidth: '340px' }}>
+                        This word or pattern does not exist in the indexed log files. Check for typos or try another search term.
+                      </Typography>
+                    </>
+                  ) : (
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Enter a search term above to locate specific occurrences across indexed logs.
+                    </Typography>
+                  )}
                 </Box>
               )}
             </Box>
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Bottom Back Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 1 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            borderRadius: '12px',
+            px: 3.5,
+            py: 1.1,
+            fontWeight: 600,
+            fontSize: '14px',
+            textTransform: 'none',
+            backgroundColor: '#2563EB',
+            backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            '&:hover': {
+              backgroundColor: '#1D4ED8',
+              backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          Back to Tools Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

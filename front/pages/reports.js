@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -12,11 +12,13 @@ import {
   CircularProgress,
   Chip,
   Divider,
+  Alert,
 } from '@mui/material';
 import useSentenceFinder from '../hooks/useSentenceFinder';
 import { useRouter } from 'next/router';
 import BasicAccordion from '@/components/BasicAccordian';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SecurityIcon from '@mui/icons-material/Security';
 import HighlightIcon from '@mui/icons-material/Highlight';
 
@@ -25,10 +27,23 @@ const Reports = () => {
   const [defaultKeywords, setDefaultKeywords] = useState(['hash', 'id', 'signature', 'gcc', 'chip', 'kernel', 'u-boot']);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [cvOutput, setCvOutput] = useState('Click "Analyze Boot Log" to extract security insights.');
+  const [scanError, setScanError] = useState('');
+  const [hasCachedScan, setHasCachedScan] = useState(false);
   const newReport = router.query || {};
 
   const { sentenses, findSentences } = useSentenceFinder();
+
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem("active_scan_data");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.results || parsed.scanned_path)) {
+          setHasCachedScan(true);
+        }
+      }
+    } catch (_) { }
+  }, []);
 
   const handleFilterKeywords = () => {
     const filterKeywords = keywordsToFilterString.split(' ').filter((e) => e !== '');
@@ -41,8 +56,10 @@ const Reports = () => {
 
   const analyzeBootLog = async () => {
     setLoading(true);
+    setScanError('');
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cv_scan/`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${apiBase}/cv_scan/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,11 +67,44 @@ const Reports = () => {
         body: JSON.stringify({ boot_log: `${newReport.report || ''}` }),
       });
       const data = await response.json();
-      setCvOutput(`${data.data || 'Analysis complete. No vulnerabilities reported.'}`);
+      if (data.scan_data) {
+        try {
+          sessionStorage.setItem("active_scan_data", JSON.stringify(data.scan_data));
+          if (newReport.report) {
+            sessionStorage.setItem("active_boot_log", newReport.report);
+          }
+        } catch (_) { }
+        setHasCachedScan(true);
+        // 1) Analysis results open in the new page by default
+        router.push('/bootlog-report');
+      } else if (data.data) {
+        setScanError(data.data);
+      } else {
+        setScanError('Analysis failed: No scan data returned from server.');
+      }
     } catch (e) {
-      setCvOutput(`Analysis error: ${e.message}`);
+      setScanError(`Analysis error: ${e.message}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/uart');
+    }
+  };
+
+  const handleOpenReportPage = () => {
+    if (hasCachedScan) {
+      router.push('/bootlog-report');
+    } else if (newReport.report) {
+      analyzeBootLog();
+    } else {
+      router.push('/bootlog-report');
+    }
   };
 
   return (
@@ -124,7 +174,7 @@ const Reports = () => {
         <Box sx={{ mb: 3 }}>
           <Button
             startIcon={<ArrowBackIcon />}
-            onClick={() => router.back()}
+            onClick={handleBack}
             sx={{
               color: 'text.secondary',
               fontWeight: 600,
@@ -159,37 +209,65 @@ const Reports = () => {
                 Run pattern matchers and vulnerability databases against the captured boot session.
               </Typography>
 
-              <Button
-                variant="contained"
-                onClick={analyzeBootLog}
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SecurityIcon />}
-                sx={{ borderRadius: '12px', fontWeight: 600, py: 1 }}
-              >
-                {loading ? 'Analyzing...' : 'Analyze Boot Log'}
-              </Button>
+              {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Chip
+                  size="small"
+                  label="Active DB: NIST NVD 2.0 (390k+ CVEs)"
+                  color="primary"
+                  variant="outlined"
+                  sx={{ fontWeight: 600, fontSize: '11px', borderRadius: '8px' }}
+                />
+              </Box> */}
 
-              <Divider />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Button
+                  variant="contained"
+                  onClick={analyzeBootLog}
+                  disabled={loading}
+                  startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SecurityIcon />}
+                  sx={{ borderRadius: '12px', fontWeight: 600, py: 1.1 }}
+                >
+                  {loading ? 'Analyzing Boot Log...' : 'Analyze Boot Log'}
+                </Button>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                Analysis Result:
-              </Typography>
-
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: '12px',
-                  backgroundColor: 'background.default',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  maxHeight: '350px',
-                  overflowY: 'auto',
-                }}
-              >
-                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', color: 'text.secondary' }}>
-                  {cvOutput}
-                </Typography>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={handleOpenReportPage}
+                  disabled={loading}
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    py: 1,
+                    borderColor: 'primary.main',
+                    borderWidth: '1.5px',
+                    '&:hover': {
+                      borderWidth: '1.5px',
+                      backgroundColor: 'primary.main',
+                      color: '#FFFFFF',
+                    },
+                  }}
+                >
+                  {hasCachedScan ? 'View Most Recent Report' : 'Open Full Analysis Page'}
+                </Button>
               </Box>
+
+              {/* {hasCachedScan && (
+                <Chip
+                  size="small"
+                  label="✓ Most Recent Scan Cached"
+                  color="success"
+                  variant="outlined"
+                  sx={{ fontWeight: 600, fontSize: '11px', borderRadius: '8px', alignSelf: 'flex-start' }}
+                />
+              )} */}
+
+              {scanError && (
+                <Alert severity="error" sx={{ borderRadius: '10px', fontSize: '13px' }}>
+                  {scanError}
+                </Alert>
+              )}
             </Paper>
           </Grid>
 
@@ -271,9 +349,26 @@ const Reports = () => {
             </Paper>
           </Grid>
         </Grid>
+
+        {/* Bottom Back Button */}
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-start' }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBack}
+            sx={{
+              color: 'text.secondary',
+              fontWeight: 600,
+              borderRadius: '10px',
+              '&:hover': { color: 'text.primary', backgroundColor: 'action.hover' },
+            }}
+          >
+            Back
+          </Button>
+        </Box>
       </Box>
     </Box>
   );
 };
 
 export default Reports;
+

@@ -3,7 +3,9 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import Head from 'next/head';
 import "@/styles/globals.css";
-import ChatBot from '@/components/ChatBot';
+import dynamic from 'next/dynamic';
+
+const ChatBot = dynamic(() => import('@/components/ChatBot'), { ssr: false });
 
 const theme = createTheme({
   palette: {
@@ -118,6 +120,32 @@ const theme = createTheme({
         },
       },
     },
+    MuiCssBaseline: {
+      styleOverrides: {
+        'input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button': {
+          WebkitAppearance: 'none',
+          margin: 0,
+        },
+        'input[type=number]': {
+          MozAppearance: 'textfield',
+          appearance: 'textfield',
+        },
+      },
+    },
+    MuiInputBase: {
+      styleOverrides: {
+        input: {
+          '&[type=number]': {
+            MozAppearance: 'textfield',
+            appearance: 'textfield',
+            '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
+              WebkitAppearance: 'none',
+              margin: 0,
+            },
+          },
+        },
+      },
+    },
   },
 });
 
@@ -128,12 +156,6 @@ function App({ Component, pageProps }) {
         <title>IoT Security Research Lab | Hardware Auditing Tool</title>
         <meta name="description" content="Hardware Security Auditing, Bootlog CVE Extraction & Glitch Testing" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="true" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap"
-          rel="stylesheet"
-        />
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />

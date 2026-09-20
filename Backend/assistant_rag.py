@@ -22,9 +22,10 @@ Your goal is to guide users through the Hardware Auditing Tool and explain its f
 
 Instructions:
 1. Answer the user's questions clearly, concisely, and accurately based on the provided IoT Security Guide context.
-2. If asked about the recommended order of steps, list the workflow clearly (e.g., Pin setup -> Detect Baud -> Capture Bootlog -> Analyze Bootlog -> Console Check/Glitching -> SPI extraction -> Firmware analysis -> Hardcoded Passwords -> CVE scanning).
-3. If asked about Relay vs OCTOCOPLOR, explain the differences clearly.
-4. If the question is outside the scope of IoT security / this tool, politely steer the conversation back to the hardware auditing platform.
+2. Keep responses brief (under 120 words) and directly actionable with clear bullet points.
+3. If asked about the recommended order of steps, list the workflow clearly (e.g., Pin setup -> Detect Baud -> Capture Bootlog -> Analyze Bootlog -> Console Check/Glitching -> SPI extraction -> Firmware analysis -> Hardcoded Passwords -> CVE scanning).
+4. If asked about Relay vs OCTOCOPLOR, explain the differences clearly.
+5. If the question is outside the scope of IoT security / this tool, politely steer the conversation back to the hardware auditing platform.
 """
 
 
@@ -163,20 +164,87 @@ User Question: {clean_query}
 Please provide a clear, concise, and structured response:"""
 
     try:
-        from hardware_config import SLM_NUM_THREADS, SLM_CONTEXT_SIZE, SLM_TEMPERATURE
-        response = ollama.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": prompt}
-            ],
-            options={
-                "num_thread": SLM_NUM_THREADS,
-                "num_ctx": SLM_CONTEXT_SIZE,
-                "temperature": SLM_TEMPERATURE
-            }
-        )
-        answer = response["message"]["content"]
+        from hardware_config import SLM_NUM_THREADS, SLM_TEMPERATURE
+        options = {
+            "num_thread": SLM_NUM_THREADS,
+            "num_ctx": 2048,
+            "temperature": SLM_TEMPERATURE,
+            "num_predict": 350
+        }
+
+        target_model = model or DEFAULT_CHAT_MODEL
+        try:
+            try:
+                response = ollama.chat(
+                    model=target_model,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt}
+                    ],
+                    think=False,
+                    options=options
+                )
+            except TypeError:
+                response = ollama.chat(
+                    model=target_model,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt}
+                    ],
+                    options=options
+                )
+        except Exception as model_err:
+            if target_model != DEFAULT_CHAT_MODEL:
+                print(f"[WARN] Assistant model {target_model} failed ({model_err}). Falling back to {DEFAULT_CHAT_MODEL}...")
+                target_model = DEFAULT_CHAT_MODEL
+                try:
+                    response = ollama.chat(
+                        model=target_model,
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt}
+                        ],
+                        think=False,
+                        options=options
+                    )
+                except TypeError:
+                    response = ollama.chat(
+                        model=target_model,
+                        messages=[
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": prompt}
+                        ],
+                        options=options
+                    )
+            else:
+                raise model_err
+
+        raw_content = response.get("message", {}).get("content", "")
+        raw_thinking = response.get("message", {}).get("thinking", "")
+        
+        # Clean thinking tags and extract the concrete answer
+        if "</think>" in raw_content:
+            clean_answer = raw_content.split("</think>")[-1].strip()
+        elif "<think>" in raw_content:
+            # If think tag was unclosed, extract drafted bullet points or answer
+            bullets = re.findall(r'(?:[-*•]|\d+\.)\s+[^\n]+', raw_content)
+            if bullets:
+                clean_answer = "\n".join(bullets)
+            else:
+                clean_answer = re.sub(r'<think>[\s\S]*', '', raw_content).strip()
+        else:
+            clean_answer = raw_content.strip()
+
+        # If content was empty, try raw_thinking
+        if not clean_answer and raw_thinking:
+            if "</think>" in raw_thinking:
+                clean_answer = raw_thinking.split("</think>")[-1].strip()
+            else:
+                bullets = re.findall(r'(?:[-*•]|\d+\.)\s+[^\n]+', raw_thinking)
+                clean_answer = "\n".join(bullets) if bullets else raw_thinking.strip()
+
+        answer = clean_answer or "I processed your request, but no response text was generated. Please try rephrasing."
+        model = target_model
     except Exception as e:
         answer = f"Error querying local AI model ({model}): {str(e)}. Make sure Ollama is running ('ollama serve') and model is pulled ('ollama pull {model}')."
 

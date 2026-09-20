@@ -11,6 +11,8 @@ venv.bak/
 *.py[cod]
 *$py.class
 __pycache__/
+*_old.py
+Backend/*_old.py
 
 # Node / Next.js Dependencies & Build Outputs
 node_modules/
@@ -53,6 +55,7 @@ data/nvd_db/
 # Chroma Vector Stores & Embeddings
 data/chroma_db/
 data/chroma_assistant_db/
+data/rag_index_metadata.json
 
 # Epss raw large data files
 Backend/epss.json
@@ -62,6 +65,9 @@ Backend/cve_dataset.json
 # Temporary / Ingestion directories
 data/temp/
 data/db_temp/
+Backend/db_temp/
+**/db_temp/
+**/temp/
 data/uploads/
 update.zip
 CVE-all.json.xz
@@ -85,10 +91,18 @@ CVE-all.json.xz
 *.zip
 *.xz
 
-# Extracted firmware working directories
+# Hardware SPI/Flash readout dumps
+Backend/File_SPI*
+Backend/File_*
+File_SPI*
+
+# Extracted firmware working directories (including symlinks)
+extracted_files
 extracted_files/
+**/extracted_files
 **/extracted_files/
 *_extracted/
+Backend/extracted_files
 Backend/extracted_files/
 Backend/Analysis_results/
 
@@ -96,6 +110,23 @@ Backend/Analysis_results/
 Backend/*_entropy.html
 Backend/*_entropy.txt
 Backend/*_testout.txt*
+entropy_graph
+entorpy_graph
+entropy_graph/
+entorpy_graph/
+Backend/entropy_graph
+Backend/entorpy_graph
+Backend/entropy_graph/
+Backend/entorpy_graph/
+FirmAudit
+FirmAudit/
+Backend/FirmAudit
+Backend/FirmAudit/
+**/entropy_graph
+**/entorpy_graph
+**/entropy_graph/
+**/entorpy_graph/
+
 
 # ==========================================
 # Runtime Logs & Transient Outputs
@@ -108,6 +139,19 @@ Backend/uart_logs/*
 combined_files_output.txt
 Backend/combined_files_output.txt
 extracted_index.txt
+firmwalker.txt
+**/firmwalker.txt
+
+# Transient scan outputs & temp files
+Backend/output*.txt*
+Backend/temp_*.txt
+Backend/*_boot_log*.txt*
+Backend/*_bootup*.txt*
+output.txt
+
+# Dynamically captured UART boot logs
+data/bootlogs/boot_log_*.txt
+data/bootlogs/captured_bootlog*.txt
 
 # ==========================================
 # Knowledge Graph Intermediate Caches
@@ -135,3 +179,11 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# Temporary screenshots & root image artifacts
+/*.png
+/*.jpg
+/*.jpeg
+
+# AI Agent local skills and cache
+.agents/skills/

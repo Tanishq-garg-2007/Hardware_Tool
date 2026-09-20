@@ -73,11 +73,13 @@ def collect_all_files(source_folder: str, output_file: str):
                 full_path = os.path.join(root, fname)
                 append_file_to_output(full_path, out_fh)
 
-def get_search_results_json(output_file: str, search_str: str) -> list:
+def get_search_results_json(output_file: str, search_str: str, max_results: int = 200) -> list:
     """
     Searches for occurrences of search_str in output_file with accurate
     source filename, file-relative line numbers, and context snippets.
-    Supports both case-insensitive regex and literal matching.
+    Prioritizes case-insensitive literal substring matching to avoid regex
+    character-class false matches (e.g. '[    0.000000]' or IP addresses),
+    while gracefully falling back to regex when explicit patterns are used.
     """
     if not os.path.exists(output_file):
         return []
@@ -85,11 +87,17 @@ def get_search_results_json(output_file: str, search_str: str) -> list:
     if not search_str or not search_str.strip():
         return []
 
-    search_str = search_str.strip()
-    try:
-        regex = re.compile(search_str, re.IGNORECASE)
-    except re.error:
-        regex = re.compile(re.escape(search_str), re.IGNORECASE)
+    search_str_clean = search_str.strip()
+    search_lower = search_str_clean.lower()
+
+    # Attempt to compile regex for users specifying regex patterns (e.g. ^, $, \d+, .*)
+    regex = None
+    has_regex_metachars = bool(re.search(r"[\\^$*+?{}|()]", search_str_clean))
+    if has_regex_metachars:
+        try:
+            regex = re.compile(search_str_clean, re.IGNORECASE)
+        except re.error:
+            regex = None
 
     with open(output_file, "r", encoding="utf-8", errors="replace") as f:
         lines = f.readlines()
@@ -129,11 +137,26 @@ def get_search_results_json(output_file: str, search_str: str) -> list:
 
         if in_file:
             file_line += 1
-            match = regex.search(line_raw)
-            if match:
-                start = max(0, i - 3)
-                end = min(total_lines, i + 4)
-                context = [lines[idx].strip() for idx in range(start, end)]
+            line_lower = line_raw.lower()
+            start_col = -1
+            end_col = -1
+
+            # 1. Primary: Literal case-insensitive substring search (exact, high-fidelity)
+            lit_idx = line_lower.find(search_lower)
+            if lit_idx != -1:
+                start_col = lit_idx
+                end_col = lit_idx + len(search_str_clean)
+            elif regex:
+                # 2. Secondary: Regex match if literal match was not found
+                reg_match = regex.search(line_raw)
+                if reg_match:
+                    start_col = reg_match.start()
+                    end_col = reg_match.end()
+
+            if start_col != -1:
+                start = max(0, i - 2)
+                end = min(total_lines, i + 3)
+                context = [lines[idx].strip() for idx in range(start, end) if lines[idx].strip() not in ("file start", "file end")]
 
                 results.append({
                     "filename": current_filename,
@@ -141,10 +164,13 @@ def get_search_results_json(output_file: str, search_str: str) -> list:
                     "line": file_line,          # Accurate line number in the original file
                     "merged_line": i + 1,       # Line in the merged combined_files_output.txt
                     "content": trimmed,
-                    "start_col": match.start(),
-                    "end_col": match.end(),
+                    "start_col": start_col,
+                    "end_col": end_col,
                     "context": context
                 })
+
+                if len(results) >= max_results:
+                    break
 
         i += 1
 

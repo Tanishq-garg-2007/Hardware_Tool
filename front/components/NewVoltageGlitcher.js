@@ -8,17 +8,28 @@ import {
   Paper,
   Alert,
 } from '@mui/material';
+import { useRouter } from 'next/router';
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
-import ElectricBoltIcon from '@mui/icons-material/ElectricBolt';
-import TuneIcon from '@mui/icons-material/Tune';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const NewVoltageGlitcher = () => {
-  const channelRef = useRef(null);
+const NewVoltageGlitcher = ({ onBack }) => {
+  const router = useRouter();
   const powerOnTimeRef = useRef();
   const powerOffTimeRef = useRef();
   const powerDurationTImeRef = useRef();
-  const [freq, setFreq] = useState('');
   const [status, setStatus] = useState(null);
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/dashboard');
+    }
+  };
 
   const powerOffHandler = async () => {
     try {
@@ -46,39 +57,10 @@ const NewVoltageGlitcher = () => {
     }
   };
 
-  const freqHandler = async () => {
-    if (!freq) return;
-    try {
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/set_volt/${freq}`);
-      const data = await resp.json();
-      if (!resp.ok || data.status === 'error') {
-        throw new Error(data.message || 'Failed to set frequency.');
-      }
-      setStatus({ type: 'success', msg: data.message || `Frequency set to ${freq} Hz successfully.` });
-    } catch (e) {
-      setStatus({ type: 'error', msg: e.message || 'Failed to set frequency.' });
-    }
-  };
-
-  const channelHandler = async () => {
-    const channel = channelRef.current?.value;
-    if (!channel) return;
-    try {
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/set_channel/${channel}`);
-      const data = await resp.json();
-      if (!resp.ok || data.status === 'error') {
-        throw new Error(data.message || 'Failed to set channel.');
-      }
-      setStatus({ type: 'success', msg: data.message || `Channel set to ${channel} successfully.` });
-    } catch (e) {
-      setStatus({ type: 'error', msg: e.message || 'Failed to set channel.' });
-    }
-  };
-
   const powerOnTimeHandler = async () => {
-    const pon = powerOnTimeRef.current?.value;
-    const poff = powerOffTimeRef.current?.value;
-    const duration = powerDurationTImeRef.current?.value;
+    const pon = powerOnTimeRef.current?.value?.trim() || '5';
+    const poff = powerOffTimeRef.current?.value?.trim() || '3';
+    const duration = powerDurationTImeRef.current?.value?.trim() || '10';
     if (!pon || !poff || !duration) return;
     try {
       const resp = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/new_set_volt_custom/${pon}/${poff}/${duration}`);
@@ -125,52 +107,6 @@ const NewVoltageGlitcher = () => {
         </Box>
       </Paper>
 
-      {/* Frequency & Channel */}
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '16px', backgroundColor: 'background.default', height: '100%' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <ElectricBoltIcon color="primary" /> Frequency Tuning
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Frequency (Hz)"
-                variant="outlined"
-                value={freq}
-                onChange={(e) => setFreq(e.target.value)}
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: 'background.paper' } }}
-              />
-              <Button variant="contained" onClick={freqHandler} sx={{ borderRadius: '10px', fontWeight: 600 }}>
-                Set
-              </Button>
-            </Box>
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '16px', backgroundColor: 'background.default', height: '100%' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-              <TuneIcon color="primary" /> Channel Selection
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1.5 }}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Channel"
-                inputRef={channelRef}
-                variant="outlined"
-                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: 'background.paper' } }}
-              />
-              <Button variant="contained" onClick={channelHandler} sx={{ borderRadius: '10px', fontWeight: 600 }}>
-                Set
-              </Button>
-            </Box>
-          </Paper>
-        </Grid>
-      </Grid>
-
       {/* Custom Glitch Timing */}
       <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '16px', backgroundColor: 'background.default' }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
@@ -182,6 +118,7 @@ const NewVoltageGlitcher = () => {
               fullWidth
               size="small"
               label="Power On Time (Sec)"
+              placeholder="5"
               inputRef={powerOnTimeRef}
               type="number"
               variant="outlined"
@@ -193,6 +130,7 @@ const NewVoltageGlitcher = () => {
               fullWidth
               size="small"
               label="Power Off Time (Sec)"
+              placeholder="3"
               inputRef={powerOffTimeRef}
               type="number"
               variant="outlined"
@@ -204,6 +142,7 @@ const NewVoltageGlitcher = () => {
               fullWidth
               size="small"
               label="Duration (Min)"
+              placeholder="10"
               inputRef={powerDurationTImeRef}
               type="number"
               variant="outlined"
@@ -219,6 +158,34 @@ const NewVoltageGlitcher = () => {
           Apply Advanced Timing
         </Button>
       </Paper>
+
+      {/* Bottom Back Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            borderRadius: '12px',
+            px: 3.5,
+            py: 1.1,
+            fontWeight: 600,
+            fontSize: '14px',
+            textTransform: 'none',
+            backgroundColor: '#2563EB',
+            backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            '&:hover': {
+              backgroundColor: '#1D4ED8',
+              backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

@@ -99,16 +99,8 @@ class FirmwareScanner:
                 content_bytes = f.read()
 
             # Passwords & Credentials
-            is_single_target = (filepath == self.target_dir)
-            is_credential_target = (
-                filepath.name.lower() in self.target_filenames or 
-                filepath.name.endswith('.bak') or
-                any(k in filepath.name.lower() for k in ['passwd', 'shadow', 'credential', 'secret', 'password']) or
-                is_single_target
-            )
-            if is_credential_target:
-                if str(filepath) not in self.results["system_files"]:
-                    self.results["system_files"].append(str(filepath))
+            if filepath.name.lower() in self.target_filenames or filepath.name.endswith('.bak'):
+                self.results["system_files"].append(str(filepath))
                 try:
                     text_content = content_bytes.decode('utf-8', errors='ignore')
                     self.parse_credentials(filepath, text_content)
@@ -156,14 +148,12 @@ class FirmwareScanner:
             pass
 
     def run(self) -> Dict[str, Any]:
-        if self.target_dir.is_file():
-            self.scan_file(self.target_dir)
-        elif self.target_dir.is_dir():
-            for filepath in self.target_dir.rglob('*'):
-                if filepath.is_file():
-                    self.scan_file(filepath)
-        else:
-            raise FileNotFoundError(f"Target path '{self.target_dir}' does not exist or is not reachable.")
+        if not self.target_dir.is_dir():
+            raise FileNotFoundError(f"Directory '{self.target_dir}' does not exist or is not reachable.")
+
+        for filepath in self.target_dir.rglob('*'):
+            if filepath.is_file():
+                self.scan_file(filepath)
 
         self.results["urls_and_domains"] = sorted(list(self.results["urls_and_domains"]))
         return self.results

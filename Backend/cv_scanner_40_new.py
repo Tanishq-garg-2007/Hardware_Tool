@@ -76,59 +76,26 @@ import zipfile
 import datetime
 
 def should_update() -> bool:
-    current_date = datetime.date.today()
-    last_updated_date = None
-    if not os.path.exists("db_temp"):
-        return True
-    if os.path.exists("last_updated_date.txt"):
-        try:
-            with open("last_updated_date.txt", "r") as file:
-                last_updated_date = datetime.datetime.strptime(file.read().strip(), "%Y-%m-%d").date()
-        except (ValueError, FileNotFoundError):
-            last_updated_date = None
-    if last_updated_date is None or current_date >= last_updated_date + datetime.timedelta(days=7):
-        print("\n[+] Database is older than 7 days (or missing). Triggering automatic update...")
-        return True
-    return False
+    try:
+        from cve_updater import check_should_update, is_internet_available
+        # OFFLINE FIRST: If no internet connection, NEVER update/download
+        if not is_internet_available():
+            return False
+        return check_should_update()["needs_update"]
+    except Exception:
+        return False
 
 def update() -> bool:
-    url = "https://github.com/CVEProject/cvelistV5/archive/refs/heads/main.zip"
     try:
-        if os.path.exists("update.zip"):
-            os.remove("update.zip")
-        print("\n[+] Downloading fresh MITRE CVE Database from GitHub. Please wait...")
-        log.info("Downloading database...")
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-
-        with open("update.zip", "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024*1024):
-                if chunk:
-                    file.write(chunk)
-
-        folder_name = "db_temp"
-        folder_path = os.path.join(os.getcwd(), folder_name)
-
-        if os.path.exists(folder_path):
-            shutil.rmtree(folder_path)
-
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
-
-        log.info("Extracting database...")
-        with zipfile.ZipFile("update.zip", "r") as zip_ref:
-            zip_ref.extractall(folder_name)
-
-        os.remove("update.zip")
-        with open("last_updated_date.txt", "w") as file:
-            file.write(datetime.date.today().strftime("%Y-%m-%d"))
-            
-        print("[+] CVE Database Update Complete! The database is now up to date.\n")
-        log.info("CVE database updated successfully.")
+        from cve_updater import _download_and_extract_task, is_internet_available
+        if not is_internet_available():
+            log.info("Offline mode: No internet connection detected, skipping update.")
+            return False
+        print("\n[+] Triggering NIST NVD Database download and sync...")
+        _download_and_extract_task(force=True)
         return True
-
     except Exception as e:
-        log.error(f"Error occurred while updating CVE database: {str(e)}")
+        log.error(f"Error occurred while updating NVD database: {str(e)}")
         return False
 
 
@@ -2874,40 +2841,5 @@ def main():
 if __name__ == "__main__":
     main()
 def find_cve1(text: str, db_dir: str = "db_temp") -> str:
-    import tempfile
-    try:
-        if should_update():
-            update()
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8") as tmp:
-            tmp.write(text)
-            tmp_path = tmp.name
-        try:
-            bootlog_info = parse_bootlog(tmp_path)
-        finally:
-            try: os.remove(tmp_path)
-            except OSError: pass
-
-        scan1_matches = []
-        scan2_matches = []
-        for chunk in _stream_cve_database(db_dir, chunk_size=10000):
-            s1 = scan_bootloader_cves(bootlog_info, chunk, verbose=False, print_stats=False)
-            s2 = scan_kernel_cves(bootlog_info, chunk, verbose=False, print_stats=False)
-            scan1_matches.extend(s1)
-            scan2_matches.extend(s2)
-
-        def _serialise(m):
-            return {
-                "cve_id": m.cve_id, "severity": m.severity, "base_score": m.base_score,
-                "published": m.published, "description": m.description,
-                "matched_product": m.matched_product, "matched_vendor": m.matched_vendor,
-                "matched_version_range": m.matched_version_range, "scan": m.scan,
-                "subsystem": m.subsystem, "feature_proof": m.feature_proof,
-                "references": m.references,
-            }
-
-        all_matches = scan1_matches + scan2_matches
-        return json.dumps([_serialise(m) for m in all_matches], indent=2, ensure_ascii=False)
-
-    except Exception as e:
-        log.error(f"find_cve() failed: {e}")
-        return json.dumps([])
+    from cv_scanner import find_cve
+    return find_cve(text)

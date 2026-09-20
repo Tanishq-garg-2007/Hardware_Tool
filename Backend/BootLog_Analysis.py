@@ -77,14 +77,20 @@ import zipfile
 
 def should_update() -> bool:
     try:
-        from cve_updater import check_should_update
+        from cve_updater import check_should_update, is_internet_available
+        # OFFLINE BY DEFAULT: Never trigger update if offline
+        if not is_internet_available():
+            return False
         return check_should_update()["needs_update"]
     except Exception:
         return False
 
 def update() -> bool:
     try:
-        from cve_updater import _download_and_extract_task
+        from cve_updater import _download_and_extract_task, is_internet_available
+        if not is_internet_available():
+            log.info("Offline mode: No internet connection detected, skipping update.")
+            return False
         print("\n[+] Triggering NIST NVD Database download and sync...")
         _download_and_extract_task(force=True)
         return True
@@ -669,9 +675,9 @@ def extract_target_hw_from_cpe(criteria: str) -> str:
 # SECTION 4: BOOTLOG PARSER
 # =============================================================================
 
-_RE_UBOOT_MAIN    = re.compile(r"^U-Boot\s+(20\d{2}\.\d{2})([-\w.+]*)?\s+\(", re.MULTILINE | re.IGNORECASE)
-_RE_UBOOT_ANY     = re.compile(r"U-Boot\s+(?:SPL\s+|TPL\s+)?(20\d{2}\.\d{2})([-\w.+]*)?", re.IGNORECASE)
-_RE_UBOOT_SPL     = re.compile(r"U-Boot\s+SPL\s+(20\d{2}\.\d{2})([-\w.+]*)?", re.IGNORECASE)
+_RE_UBOOT_MAIN    = re.compile(r"^(?:U-Boot|UBoot)\s+(\d+(?:\.\d+)+)([-\w.+]*)?\s+\(", re.MULTILINE | re.IGNORECASE)
+_RE_UBOOT_ANY     = re.compile(r"(?:U-Boot|UBoot)\s+(?:Version:?\s*)?(?:SPL\s+|TPL\s+)?(\d+(?:\.\d+)+)([-\w.+]*)?", re.IGNORECASE)
+_RE_UBOOT_SPL     = re.compile(r"U-Boot\s+SPL\s+(\d+(?:\.\d+)+)([-\w.+]*)?", re.IGNORECASE)
 
 _RE_CPU   = re.compile(r"^CPU\s*:\s+(.+)$",   re.MULTILINE)
 _RE_SOC   = re.compile(r"^SoC\s*:\s+(.+)$",   re.MULTILINE)

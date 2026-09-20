@@ -10,8 +10,9 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/router';
 import DescriptionIcon from '@mui/icons-material/Description';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const CaptureBootLogs = () => {
+const CaptureBootLogs = ({ onBack }) => {
   const baudrateRef = useRef();
   const timeRef = useRef();
   const rebootDelayRef = useRef();
@@ -19,10 +20,22 @@ const CaptureBootLogs = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/dashboard');
+    }
+  };
+
   const handleSubmit = async () => {
-    const baudrate = baudrateRef.current?.value || '115200';
-    const time = timeRef.current?.value || '10';
-    const rebootDelay = rebootDelayRef.current?.value || '2';
+    const baudrate = baudrateRef.current?.value?.trim() || '115200';
+    const time = timeRef.current?.value?.trim() || '10';
+    const rebootDelay = rebootDelayRef.current?.value?.trim() || '5';
 
     setLoading(true);
     setError(null);
@@ -77,7 +90,7 @@ const CaptureBootLogs = () => {
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5, mt: 1 }}>
           <TextField
             label="Baudrate"
-            defaultValue="115200"
+            placeholder="115200"
             size="small"
             type="number"
             inputRef={baudrateRef}
@@ -86,7 +99,7 @@ const CaptureBootLogs = () => {
           />
           <TextField
             label="Sample Time (Sec)"
-            defaultValue="10"
+            placeholder="10"
             size="small"
             type="number"
             inputRef={timeRef}
@@ -95,7 +108,7 @@ const CaptureBootLogs = () => {
           />
           <TextField
             label="Reboot Delay (Sec)"
-            defaultValue="2"
+            placeholder="5"
             size="small"
             type="number"
             inputRef={rebootDelayRef}
@@ -120,6 +133,34 @@ const CaptureBootLogs = () => {
           {error}
         </Alert>
       )}
+
+      {/* Bottom Back Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3, mb: 1 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            borderRadius: '12px',
+            px: 3.5,
+            py: 1.1,
+            fontWeight: 600,
+            fontSize: '14px',
+            textTransform: 'none',
+            backgroundColor: '#2563EB',
+            backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            '&:hover': {
+              backgroundColor: '#1D4ED8',
+              backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+              boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+            },
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

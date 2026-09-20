@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/router';
 import {
   Box,
   Button,
@@ -20,6 +21,8 @@ import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import SaveIcon from '@mui/icons-material/Save';
 import SpeedIcon from '@mui/icons-material/Speed';
 import SearchIcon from '@mui/icons-material/Search';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ChecksumComparator from './ChecksumComparator';
 
 const COMMON_CHIPS = ['MX25L12805D', 'W25Q128FV', 'W25Q64JV', 'GD25Q64', 'EN25F80', 'AT25DF641'];
 const SPEED_PRESETS = [
@@ -30,9 +33,10 @@ const SPEED_PRESETS = [
 ];
 
 const Forms = () => {
-  const [spiSpeed, setSpiSpeed] = useState('100');
-  const [fileName, setFileName] = useState('dump.bin');
-  const [chip, setChip] = useState('MX25L12805D');
+  const router = useRouter();
+  const [spiSpeed, setSpiSpeed] = useState('');
+  const [fileName, setFileName] = useState('');
+  const [chip, setChip] = useState('');
   const [psuPower, setPsuPower] = useState(false);
   const [piPower, setPiPower] = useState(false);
 
@@ -41,17 +45,28 @@ const Forms = () => {
   const [alertInfo, setAlertInfo] = useState(null); // { type: 'success' | 'error' | 'warning' | 'info', message: string }
 
   const extractFirmware = async () => {
+    if (!chip.trim()) {
+      setAlertInfo({
+        type: 'warning',
+        message: 'Please enter a target chip part number or click "Auto-Detect Chip" before extracting.'
+      });
+      return;
+    }
+
     setLoadingExtract(true);
     setAlertInfo(null);
+
+    const targetFileName = fileName.trim() || 'dump.bin';
+    const targetSpeed = String(spiSpeed || '1000');
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/spi`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          spiSpeed: String(spiSpeed),
+          spiSpeed: targetSpeed,
           chip: chip.trim(),
-          fileName: fileName.trim(),
+          fileName: targetFileName,
           psuPower: Boolean(psuPower),
           piPower: Boolean(piPower)
         })
@@ -62,7 +77,7 @@ const Forms = () => {
       if (data.success) {
         setAlertInfo({
           type: 'success',
-          message: data.message || `Firmware extracted successfully and saved to ${fileName}!`
+          message: data.message || `Firmware extracted successfully and saved to ${targetFileName}!`
         });
       } else {
         setAlertInfo({
@@ -165,7 +180,7 @@ const Forms = () => {
           gap: 3
         }}
       >
-        {/* Section 1: Power & Bus Selection */}
+        {/* Section 1: Power & Bus Selection
         <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
             <PowerSettingsNewIcon color="primary" /> Target Power Rail Selection
@@ -239,16 +254,16 @@ const Forms = () => {
               </Paper>
             </Grid>
           </Grid>
-        </Box>
+        </Box> */}
 
-        <Divider />
+        {/* <Divider /> */}
 
         {/* Section 2: SPI Clock Speed */}
         <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
             <SpeedIcon color="primary" /> SPI Bus Speed (kHz)
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+          {/* <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
             {SPEED_PRESETS.map((preset) => (
               <Chip
                 key={preset.value}
@@ -259,11 +274,11 @@ const Forms = () => {
                 sx={{ borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}
               />
             ))}
-          </Box>
+          </Box> */}
           <TextField
             fullWidth
             size="small"
-            label="Custom SPI Speed (kHz)"
+            placeholder='1000'
             type="number"
             value={spiSpeed}
             onChange={(e) => setSpiSpeed(e.target.value)}
@@ -286,7 +301,7 @@ const Forms = () => {
             <TextField
               fullWidth
               size="small"
-              label="Target Chip Part Number"
+              label="Target Chip Name"
               value={chip}
               onChange={(e) => setChip(e.target.value)}
               placeholder="e.g. MX25L12805D, W25Q128FV"
@@ -305,7 +320,7 @@ const Forms = () => {
           </Box>
 
           {/* Common Chips Quick Select */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, alignItems: 'center' }}>
+          {/* <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, alignItems: 'center' }}>
             <Typography variant="caption" sx={{ color: 'text.secondary', mr: 0.5 }}>
               Quick Select:
             </Typography>
@@ -320,7 +335,7 @@ const Forms = () => {
                 sx={{ borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}
               />
             ))}
-          </Box>
+          </Box> */}
         </Box>
 
         <Divider />
@@ -334,7 +349,6 @@ const Forms = () => {
           <TextField
             fullWidth
             size="small"
-            label="Save Dump As"
             value={fileName}
             onChange={(e) => setFileName(e.target.value)}
             placeholder="dump.bin"
@@ -342,19 +356,67 @@ const Forms = () => {
           />
 
           {/* Action Button */}
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            onClick={extractFirmware}
-            disabled={loadingExtract || !chip.trim() || !fileName.trim()}
-            startIcon={loadingExtract ? <CircularProgress size={20} color="inherit" /> : <FlashOnIcon />}
-            sx={{ borderRadius: '12px', py: 1.4, px: 4, fontWeight: 600, fontSize: '15px' }}
-          >
-            {loadingExtract ? 'Extracting SPI Flash Memory...' : 'Extract Firmware Image'}
-          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={extractFirmware}
+              disabled={loadingExtract}
+              startIcon={loadingExtract ? <CircularProgress size={20} color="inherit" /> : <FlashOnIcon />}
+              sx={{
+                borderRadius: '12px',
+                py: 1.4,
+                px: 4,
+                fontWeight: 700,
+                fontSize: '15px',
+                color: '#FFFFFF !important',
+                backgroundColor: '#2563EB',
+                backgroundImage: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: '#1D4ED8',
+                  backgroundImage: 'linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%)',
+                  boxShadow: '0 6px 20px rgba(37, 99, 235, 0.45)',
+                  transform: 'translateY(-1px)',
+                },
+                '&:active': {
+                  transform: 'translateY(0)',
+                },
+                '&.Mui-disabled': {
+                  color: '#FFFFFF !important',
+                  opacity: 0.75,
+                  backgroundImage: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)',
+                  backgroundColor: '#3B82F6',
+                }
+              }}
+            >
+              {loadingExtract ? 'Extracting SPI Flash Memory...' : 'Extract Firmware Image'}
+            </Button>
+          </Box>
         </Box>
       </Paper>
+
+      {/* Binary Checksum & Integrity Comparator */}
+      <ChecksumComparator />
+
+      {/* Bottom Back Navigation */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-start', mt: 1.5 }}>
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => router.push('/dashboard')}
+          sx={{
+            color: 'text.secondary',
+            fontWeight: 600,
+            borderRadius: '10px',
+            py: 0.8,
+            px: 1.5,
+            '&:hover': { color: 'text.primary', backgroundColor: 'action.hover' }
+          }}
+        >
+          Back to Dashboard
+        </Button>
+      </Box>
     </Box>
   );
 };

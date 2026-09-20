@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/router";
 import {
   Box,
   Typography,
@@ -26,23 +27,46 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import SyncIcon from "@mui/icons-material/Sync";
 import StorageIcon from "@mui/icons-material/Storage";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import CancelIcon from "@mui/icons-material/Cancel";
+import BootlogScanResults from "./BootlogScanResults";
 
-export default function AnalyzeBootLog() {
-  const [directoryPath, setDirectoryPath] = useState("../data/bootlogs");
+export default function AnalyzeBootLog({ onBack }) {
+  const router = useRouter();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else if (router?.query?.mode) {
+      router.push(`/dashboard?mode=${router.query.mode}`);
+    } else {
+      router.push("/dashboard");
+    }
+  };
+
+  const [directoryPath, setDirectoryPath] = useState("");
   const [scanData, setScanData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState(null);
+  const fileInputRef = useRef(null);
   const [error, setError] = useState("");
 
   // CVE Database Status & Updater State
   const [dbStatus, setDbStatus] = useState(null);
   const [dbLoading, setDbLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [updateMsg, setUpdateMsg] = useState("");
   const pollIntervalRef = useRef(null);
 
   // Fetch CVE Database Status
   const fetchDbStatus = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cve-database/status`);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiBase}/cve-database/status`);
       if (res.ok) {
         const data = await res.json();
         setDbStatus(data);
@@ -89,7 +113,8 @@ export default function AnalyzeBootLog() {
     setDbLoading(true);
     setUpdateMsg("");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cve-database/update`, {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiBase}/cve-database/update`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ force }),
@@ -101,6 +126,72 @@ export default function AnalyzeBootLog() {
       setUpdateMsg(`Update request error: ${err.message}`);
     } finally {
       setDbLoading(false);
+    }
+  };
+
+  // Handle Cancel Update
+  const handleCancelUpdate = async () => {
+    setCancelLoading(true);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiBase}/cve-database/cancel`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      setUpdateMsg(data.message || "Cancellation requested.");
+      await fetchDbStatus();
+    } catch (err) {
+      setUpdateMsg(`Cancel error: ${err.message}`);
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  // Handle Bootlog File Upload
+  const handleBootlogFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    setError("");
+    setUploadMsg(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${apiBase}/upload-bootlog`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        let errMsg = "Upload failed.";
+        try {
+          const errData = await res.json();
+          if (errData.detail) errMsg = errData.detail;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+
+      const data = await res.json();
+      const newPath = data.path || data.relative_path || data.file_path;
+      setDirectoryPath(newPath);
+      setUploadMsg({
+        type: "success",
+        text: `Uploaded "${file.name}" successfully. Ready to run analysis.`,
+      });
+    } catch (err) {
+      setUploadMsg({
+        type: "error",
+        text: `Failed to upload bootlog: ${err.message}`,
+      });
+    } finally {
+      setUploadingFile(false);
+      if (event.target) {
+        event.target.value = "";
+      }
     }
   };
 
@@ -220,7 +311,7 @@ export default function AnalyzeBootLog() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <StorageIcon color="primary" sx={{ fontSize: 28 }} />
             <Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "text.primary" }}>
                   Active CVE Database: {dbStatus?.database_type || "NIST NVD 2.0 (Offline Database)"}
                 </Typography>
@@ -235,38 +326,74 @@ export default function AnalyzeBootLog() {
                 </Tooltip>
               </Box>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Source: <strong>NIST National Vulnerability Database (NVD)</strong> • Full CVSS v2/v3/v4 &amp; EPSS
+                Source: <strong>NIST National Vulnerability Database (NVD)</strong>
               </Typography>
             </Box>
           </Box>
 
           <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              size="small"
-              onClick={() => handleUpdateDatabase(false)}
-              disabled={isUpdating || dbLoading}
-              startIcon={isUpdating ? <CircularProgress size={16} color="inherit" /> : <SyncIcon />}
-              sx={{ borderRadius: "10px", fontWeight: 600 }}
-            >
-              {isUpdating ? "Updating..." : "Update Database"}
-            </Button>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => handleUpdateDatabase(true)}
-              disabled={isUpdating || dbLoading}
-              sx={{ borderRadius: "10px", fontWeight: 600, color: "text.secondary" }}
-            >
-              Force Sync
-            </Button>
+            {isUpdating ? (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  disabled
+                  startIcon={<CircularProgress size={16} color="inherit" />}
+                  sx={{ borderRadius: "10px", fontWeight: 600 }}
+                >
+                  Updating...
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  onClick={handleCancelUpdate}
+                  disabled={cancelLoading}
+                  startIcon={cancelLoading ? <CircularProgress size={16} color="inherit" /> : <CancelIcon />}
+                  sx={{
+                    borderRadius: "10px",
+                    fontWeight: 600,
+                    borderColor: "error.main",
+                    "&:hover": {
+                      backgroundColor: "rgba(239, 68, 68, 0.08)",
+                      borderColor: "error.dark",
+                    },
+                  }}
+                >
+                  {cancelLoading ? "Cancelling..." : "Cancel Update"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={() => handleUpdateDatabase(false)}
+                  disabled={dbLoading}
+                  startIcon={<SyncIcon />}
+                  sx={{ borderRadius: "10px", fontWeight: 600 }}
+                >
+                  Update Database
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleUpdateDatabase(true)}
+                  disabled={dbLoading}
+                  sx={{ borderRadius: "10px", fontWeight: 600, color: "text.secondary" }}
+                >
+                  Force Sync
+                </Button>
+              </>
+            )}
           </Box>
         </Box>
 
         {/* Database Stats Row */}
         <Grid container spacing={1.5}>
-          <Grid item xs={6} sm={3}>
+          <Grid item xs={12} sm={4}>
             <Box sx={{ p: 1.5, borderRadius: "10px", backgroundColor: "background.paper", border: "1px solid", borderColor: "divider" }}>
               <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, display: "block" }}>
                 Database Provider
@@ -276,7 +403,7 @@ export default function AnalyzeBootLog() {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={6} sm={3}>
+          <Grid item xs={12} sm={4}>
             <Box sx={{ p: 1.5, borderRadius: "10px", backgroundColor: "background.paper", border: "1px solid", borderColor: "divider" }}>
               <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, display: "block" }}>
                 Total Records Loaded
@@ -286,7 +413,7 @@ export default function AnalyzeBootLog() {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={6} sm={3}>
+          <Grid item xs={12} sm={4}>
             <Box sx={{ p: 1.5, borderRadius: "10px", backgroundColor: "background.paper", border: "1px solid", borderColor: "divider" }}>
               <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, display: "block" }}>
                 Last Updated
@@ -296,31 +423,30 @@ export default function AnalyzeBootLog() {
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={6} sm={3}>
-            <Box sx={{ p: 1.5, borderRadius: "10px", backgroundColor: "background.paper", border: "1px solid", borderColor: "divider" }}>
-              <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, display: "block" }}>
-                Update Health
-              </Typography>
-              <Chip
-                label={dbStatus?.should_update ? "Update Needed" : "Up to Date"}
-                color={dbStatus?.should_update ? "warning" : "success"}
-                size="small"
-                sx={{ fontWeight: 700, height: "22px", fontSize: "11px", mt: 0.2 }}
-              />
-            </Box>
-          </Grid>
         </Grid>
 
         {/* Real-time Update Progress Bar */}
         {isUpdating && (
           <Box sx={{ mt: 1 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.5 }}>
               <Typography variant="caption" sx={{ fontWeight: 600, color: "primary.main" }}>
                 {statusMessage}
               </Typography>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary" }}>
-                {progressPercent}%
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: "text.primary" }}>
+                  {progressPercent}%
+                </Typography>
+                <Button
+                  size="small"
+                  color="error"
+                  variant="text"
+                  onClick={handleCancelUpdate}
+                  disabled={cancelLoading}
+                  sx={{ fontSize: "11px", py: 0, px: 1, minWidth: "auto", fontWeight: 600, textTransform: "none" }}
+                >
+                  Cancel
+                </Button>
+              </Box>
             </Box>
             <LinearProgress
               variant="determinate"
@@ -331,7 +457,17 @@ export default function AnalyzeBootLog() {
         )}
 
         {updateMsg && !isUpdating && (
-          <Alert severity="info" onClose={() => setUpdateMsg("")} sx={{ py: 0.5, borderRadius: "10px" }}>
+          <Alert
+            severity={
+              updateMsg.toLowerCase().includes("offline") ||
+              updateMsg.toLowerCase().includes("error") ||
+              updateMsg.toLowerCase().includes("no active internet")
+                ? "warning"
+                : "info"
+            }
+            onClose={() => setUpdateMsg("")}
+            sx={{ py: 0.5, borderRadius: "10px" }}
+          >
             {updateMsg}
           </Alert>
         )}
@@ -353,11 +489,11 @@ export default function AnalyzeBootLog() {
         <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "text.primary" }}>
           Target Bootlog Path or Directory
         </Typography>
-        <Box sx={{ display: "flex", gap: 2, flexWrap: { xs: "wrap", sm: "nowrap" } }}>
+        <Box sx={{ display: "flex", gap: 1.5, flexWrap: { xs: "wrap", sm: "nowrap" } }}>
           <TextField
             fullWidth
             size="small"
-            placeholder="e.g. ../data/bootlogs or ../data/bootlogs/boot_log_d.txt"
+            placeholder="Enter file/directory path or upload a bootlog file..."
             value={directoryPath}
             onChange={(e) => setDirectoryPath(e.target.value)}
             sx={{
@@ -368,10 +504,39 @@ export default function AnalyzeBootLog() {
             }}
           />
           <Button
+            component="label"
+            variant="outlined"
+            disabled={uploadingFile || loading}
+            startIcon={uploadingFile ? <CircularProgress size={18} color="inherit" /> : <CloudUploadIcon />}
+            sx={{
+              px: 2.5,
+              borderRadius: "12px",
+              fontWeight: 600,
+              whiteSpace: "nowrap",
+              minWidth: "150px",
+              color: "text.primary",
+              borderColor: "divider",
+              backgroundColor: "background.paper",
+              "&:hover": {
+                borderColor: "primary.main",
+                backgroundColor: "action.hover",
+              },
+            }}
+          >
+            {uploadingFile ? "Uploading..." : "Upload File"}
+            <input
+              type="file"
+              hidden
+              accept=".txt,.log,.raw,text/plain"
+              ref={fileInputRef}
+              onChange={handleBootlogFileUpload}
+            />
+          </Button>
+          <Button
             variant="contained"
             color="primary"
             onClick={() => handleAnalyze()}
-            disabled={loading}
+            disabled={loading || uploadingFile}
             startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SearchIcon />}
             sx={{
               px: 3,
@@ -384,38 +549,15 @@ export default function AnalyzeBootLog() {
             {loading ? "Scanning..." : "Run Analysis"}
           </Button>
         </Box>
-
-        {/* Quick presets */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-          <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500 }}>
-            Quick Presets:
-          </Typography>
-          <Chip
-            label="Sample Vulnerable Bootlog (Camera U-Boot 2019.07)"
-            size="small"
-            color="primary"
-            onClick={() => {
-              const path = "../data/bootlogs/sample_iot_camera_bootlog.txt";
-              setDirectoryPath(path);
-              handleAnalyze(path);
-            }}
-            clickable
-            variant="filled"
-            sx={{ borderRadius: "8px", fontSize: "12px", fontWeight: 600 }}
-          />
-          <Chip
-            label="All Bootlogs Directory (../data/bootlogs)"
-            size="small"
-            onClick={() => {
-              const path = "../data/bootlogs";
-              setDirectoryPath(path);
-              handleAnalyze(path);
-            }}
-            clickable
-            variant="outlined"
-            sx={{ borderRadius: "8px", fontSize: "12px" }}
-          />
-        </Box>
+        {uploadMsg && (
+          <Alert
+            severity={uploadMsg.type}
+            onClose={() => setUploadMsg(null)}
+            sx={{ py: 0.5, borderRadius: "10px" }}
+          >
+            {uploadMsg.text}
+          </Alert>
+        )}
       </Paper>
 
       {/* Error Alert */}
@@ -427,215 +569,40 @@ export default function AnalyzeBootLog() {
 
       {/* Scan Results */}
       {scanData && (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {/* Summary Stat Bar */}
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={6}>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  borderRadius: "14px",
-                  backgroundColor: "background.default",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography variant="caption" sx={{ color: "text.secondary", textTransform: "uppercase", fontWeight: 600 }}>
-                  Scanned Target Path
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600, color: "text.primary", wordBreak: "break-all" }}>
-                  {scanData.scanned_directory}
-                </Typography>
-              </Paper>
-            </Grid>
-            <Grid item xs={12} sm={6} md={6}>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  borderRadius: "14px",
-                  backgroundColor: "background.default",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography variant="caption" sx={{ color: "text.secondary", textTransform: "uppercase", fontWeight: 600 }}>
-                  Total Log Files Scanned
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: "primary.main" }}>
-                  {scanData.total_files_scanned}
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+        <BootlogScanResults
+          scanData={scanData}
+          onBack={handleBack}
+          backLabel="Back to Dashboard"
+          showBackButton={true}
+        />
+      )}
 
-          {/* List of Files */}
-          {scanData.results &&
-            scanData.results.map((fileItem, index) => (
-              <Paper
-                key={index}
-                variant="outlined"
-                sx={{
-                  p: { xs: 2.5, md: 3 },
-                  borderRadius: "18px",
-                  borderColor: "divider",
-                  backgroundColor: "background.default",
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.02)",
-                }}
-              >
-                {/* File Title Bar */}
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 1, mb: 2.5 }}>
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: "text.primary" }}>
-                      {fileItem.filename}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontFamily: "monospace" }}>
-                      {fileItem.file_path}
-                    </Typography>
-                  </Box>
-                  <Chip
-                    icon={fileItem.cve_count > 0 ? <WarningAmberIcon /> : <CheckCircleOutlineIcon />}
-                    label={fileItem.cve_count > 0 ? `${fileItem.cve_count} Vulnerabilities Found` : "Zero Vulnerabilities Detected"}
-                    color={fileItem.cve_count > 0 ? "error" : "success"}
-                    variant={fileItem.cve_count > 0 ? "filled" : "outlined"}
-                    sx={{ fontWeight: 600, borderRadius: "10px" }}
-                  />
-                </Box>
-
-                {fileItem.error ? (
-                  <Alert severity="warning" sx={{ borderRadius: "10px" }}>
-                    Error analyzing this file: {fileItem.error}
-                  </Alert>
-                ) : (
-                  <>
-                    {/* Extracted System Metadata */}
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "primary.main", textTransform: "uppercase", letterSpacing: "0.5px", mb: 1.5 }}>
-                        Extracted Hardware & System Specifications
-                      </Typography>
-
-                      <Grid container spacing={1.5}>
-                        <InfoGridItem label="Bootloader" value={formatVal(fileItem.device_summary?.bootloader)} />
-                        <InfoGridItem label="Bootloader Version" value={formatVal(fileItem.device_summary?.bootloader_version)} />
-                        <InfoGridItem label="CPU / SoC" value={formatVal(fileItem.device_summary?.cpu_soc)} />
-                        <InfoGridItem label="Architecture" value={formatVal(fileItem.device_summary?.architecture)} />
-                        <InfoGridItem label="Board Model" value={formatVal(fileItem.device_summary?.board_model)} />
-                        <InfoGridItem label="Detected Vendor" value={formatVal(fileItem.device_summary?.vendor)} />
-                        <InfoGridItem label="Linux Kernel" value={formatVal(fileItem.device_summary?.kernel_version)} />
-                        <InfoGridItem label="SquashFS Version" value={formatVal(fileItem.device_summary?.squashfs_version)} />
-                        <InfoGridItem label="GCC Version" value={formatVal(fileItem.device_summary?.gcc_version)} />
-                        <InfoGridItem label="Crypto Algorithms" value={formatVal(fileItem.device_summary?.crypto_algos)} />
-                        <InfoGridItem label="Filesystem Type" value={formatVal(fileItem.device_summary?.filesystem_type)} />
-                        <InfoGridItem label="Init Drivers" value={formatVal(fileItem.device_summary?.init_drivers)} />
-                      </Grid>
-                    </Box>
-
-                    <Divider sx={{ my: 2.5 }} />
-
-                    {/* Vulnerabilities Table */}
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "primary.main", textTransform: "uppercase", letterSpacing: "0.5px", mb: 1.5 }}>
-                        Identified CVE Vulnerabilities ({fileItem.cve_count})
-                      </Typography>
-
-                      {fileItem.matches && fileItem.matches.length > 0 ? (
-                        <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: "12px", maxHeight: "400px" }}>
-                          <Table size="small" stickyHeader>
-                            <TableHead>
-                              <TableRow>
-                                <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper" }}>CVE ID</TableCell>
-                                <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper" }}>Severity (CVSS)</TableCell>
-                                <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper" }}>CVSS Score</TableCell>
-                                <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper" }}>EPSS Threat Prob.</TableCell>
-                                <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper" }}>Matched Product</TableCell>
-                                <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper" }}>Description</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {fileItem.matches.map((cve, cveIdx) => {
-                                const scoreVal = cve.base_score ?? cve.baseScore;
-                                return (
-                                <TableRow key={cveIdx} hover>
-                                  <TableCell sx={{ fontWeight: 600, color: "primary.main", fontFamily: "monospace" }}>
-                                    {cve.cve_id || cve.id || "-"}
-                                  </TableCell>
-                                  <TableCell>{getSeverityChip(cve.severity, scoreVal)}</TableCell>
-                                  <TableCell sx={{ fontWeight: 700 }}>
-                                    {scoreVal != null && scoreVal !== "N/A"
-                                      ? (typeof scoreVal === "number" ? scoreVal.toFixed(1) : scoreVal)
-                                      : (cve.severity || "-")}
-                                  </TableCell>
-                                  <TableCell>
-                                    {cve.epss_score != null ? (
-                                      <Box>
-                                        <Typography
-                                          variant="body2"
-                                          sx={{
-                                            fontWeight: 700,
-                                            color: cve.epss_score >= 0.3 ? "error.main" : "text.primary",
-                                          }}
-                                        >
-                                          {(cve.epss_score * 100).toFixed(1)}%
-                                        </Typography>
-                                        {cve.epss_percentile != null && (
-                                          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "10px" }}>
-                                            {Math.round(cve.epss_percentile * 100)}th %tile
-                                          </Typography>
-                                        )}
-                                      </Box>
-                                    ) : (
-                                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                                        N/A
-                                      </Typography>
-                                    )}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "text.secondary", fontSize: "13px" }}>
-                                    {cve.matched_product || "-"}
-                                  </TableCell>
-                                  <TableCell sx={{ color: "text.secondary", fontSize: "13px", maxWidth: "340px" }}>
-                                    {cve.description || "-"}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      ) : (
-                        <Alert severity="success" icon={<CheckCircleOutlineIcon fontSize="inherit" />} sx={{ borderRadius: "12px" }}>
-                          No matching CVE vulnerabilities detected for this bootlog file.
-                        </Alert>
-                      )}
-                    </Box>
-                  </>
-                )}
-              </Paper>
-            ))}
+      {/* If no scanData yet, show Bottom Centered Back Button */}
+      {!scanData && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 2, mb: 1 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<ArrowBackIcon />}
+            onClick={handleBack}
+            sx={{
+              borderRadius: "12px",
+              px: 3.5,
+              py: 1.1,
+              fontWeight: 600,
+              fontSize: "14px",
+              textTransform: "none",
+              boxShadow: "0 4px 14px rgba(37, 99, 235, 0.25)",
+              "&:hover": {
+                boxShadow: "0 6px 20px rgba(37, 99, 235, 0.35)",
+              },
+            }}
+          >
+            Back to Dashboard
+          </Button>
         </Box>
       )}
     </Box>
   );
 }
 
-function InfoGridItem({ label, value }) {
-  return (
-    <Grid item xs={6} sm={4} md={3}>
-      <Box
-        sx={{
-          backgroundColor: "background.paper",
-          p: 1.5,
-          borderRadius: "10px",
-          border: "1px solid",
-          borderColor: "divider",
-          height: "100%",
-        }}
-      >
-        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 500, display: "block", mb: 0.5 }}>
-          {label}
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 600, color: "text.primary", wordBreak: "break-word" }}>
-          {value}
-        </Typography>
-      </Box>
-    </Grid>
-  );
-}
