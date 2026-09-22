@@ -43,9 +43,16 @@ def switch_power(state):
         return
     init_gpio()
     if state == 0:
-        GPIO.output(RELAY_PIN, GPIO.HIGH)   # OFF
+        GPIO.output(RELAY_PIN, GPIO.HIGH)   # OFF (Octocoupler)
     else:
-        GPIO.output(RELAY_PIN, GPIO.LOW)    # ON
+        GPIO.output(RELAY_PIN, GPIO.LOW)    # ON (Octocoupler)
+
+    try:
+        from hardware_config import RELAY_POWER_PIN
+        GPIO.setup(RELAY_POWER_PIN, GPIO.OUT)
+        GPIO.output(RELAY_POWER_PIN, GPIO.LOW if state == 0 else GPIO.HIGH)
+    except Exception:
+        pass
 
 # ---------------- RELAY CONTROL ---------------- #
 def force_relay_toggle(power_delay):

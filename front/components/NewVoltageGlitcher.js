@@ -155,7 +155,7 @@ const NewVoltageGlitcher = ({ onBack }) => {
           onClick={powerOnTimeHandler}
           sx={{ mt: 2, borderRadius: '10px', fontWeight: 600 }}
         >
-          Apply Advanced Timing
+          Pulse Duration
         </Button>
       </Paper>
 

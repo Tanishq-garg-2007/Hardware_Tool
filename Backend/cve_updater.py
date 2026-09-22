@@ -226,7 +226,7 @@ def check_should_update(db_dir: Path = None) -> dict:
     current_date = datetime.date.today()
     days_old = (current_date - last_updated_date).days
 
-    if days_old >= 7:
+    if days_old >= 5:
         return {
             "needs_update": True,
             "reason": f"Database is {days_old} days old (update policy is > 7 days).",

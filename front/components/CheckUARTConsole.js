@@ -122,7 +122,9 @@ const CheckUARTConsole = ({ onBack }) => {
               ? 'UART Communication Error'
               : result.is_available
                 ? 'Interactive UART Console Available'
-                : 'No Interactive Console Detected'}
+                : result.is_garbage
+                  ? 'Garbage Output Detected'
+                  : 'No Interactive Console Detected'}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             {result.message || result.data}

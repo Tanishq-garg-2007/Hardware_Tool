@@ -4,6 +4,7 @@ import Button from '@mui/material/Button'
 export default function ActionAreaCard({
   title,
   setCurrentModule,
+  sx = {},
 }) {
   return (
     <Button
@@ -14,12 +15,13 @@ export default function ActionAreaCard({
         backgroundColor: '#1976D2',
         color: '#FFFFFF',
         py: 1.6,
-        px: 3,
+        px: { xs: 1, sm: 1.5, md: 2 },
         borderRadius: '6px',
         fontWeight: 600,
-        fontSize: '0.88rem',
-        letterSpacing: '0.6px',
+        fontSize: { xs: '0.78rem', sm: '0.81rem', md: '0.83rem' },
+        letterSpacing: '0.25px',
         textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
         boxShadow: '0 2px 4px -1px rgba(0,0,0,0.2), 0 4px 5px 0 rgba(0,0,0,0.14), 0 1px 10px 0 rgba(0,0,0,0.12)',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex',
@@ -37,6 +39,7 @@ export default function ActionAreaCard({
           transform: 'translateY(0)',
           boxShadow: '0 2px 4px -1px rgba(0,0,0,0.2)',
         },
+        ...sx,
       }}
     >
       {title}

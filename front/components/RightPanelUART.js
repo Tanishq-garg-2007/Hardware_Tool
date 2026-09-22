@@ -47,8 +47,18 @@ const RightPanelUART = ({ currentModule }) => {
   }
 
   useEffect(() => {
+    if (currentModule !== 'Detect Baudrate' && currentModule !== 'New Detect Baudrate') {
+      setReport(null);
+      setList([]);
+    }
+  }, [currentModule]);
+
+  useEffect(() => {
     const generateFormatedList = () => {
-      if (!report) return;
+      if (!report) {
+        setList([]);
+        return;
+      }
       const lines = report.split('\n');
 
       let result = [];
@@ -87,6 +97,8 @@ const RightPanelUART = ({ currentModule }) => {
     generateFormatedList();
   }, [report]);
 
+  const isBaudrateModule = currentModule === 'Detect Baudrate' || currentModule === 'New Detect Baudrate';
+
   return (
     <Grid item xs={12} md={8} lg={9}>
       <Paper
@@ -114,7 +126,7 @@ const RightPanelUART = ({ currentModule }) => {
 
         <Box sx={{ width: '100%' }}>{content}</Box>
 
-        {list && list.length > 0 && (
+        {isBaudrateModule && list && list.length > 0 && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
               Detected Baudrate Output Log

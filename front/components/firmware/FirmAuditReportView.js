@@ -6,24 +6,18 @@ import {
   CircularProgress,
   Paper,
   Chip,
-  Grid,
   Tabs,
   Tab,
   IconButton,
   Tooltip,
+  TablePagination,
 } from '@mui/material';
 import SecurityIcon from '@mui/icons-material/Security';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
-import KeyIcon from '@mui/icons-material/Key';
-import FolderIcon from '@mui/icons-material/Folder';
-import LanguageIcon from '@mui/icons-material/Language';
-import DnsIcon from '@mui/icons-material/Dns';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import { MetricCard, TableWrapper, parseFirmAuditOutput } from './FirmwareCommon';
+import { TableWrapper, parseFirmAuditOutput } from './FirmwareCommon';
 
 export default function FirmAuditReportView({
   firmAuditResults,
@@ -36,20 +30,73 @@ export default function FirmAuditReportView({
 }) {
   const [activeTab, setActiveTab] = useState(0);
   const [showRawStream, setShowRawStream] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleTabChange = (_, newTab) => {
+    setActiveTab(newTab);
+    setPage(0);
+  };
 
   const auditData = firmAuditResults || parseFirmAuditOutput(txtOutput);
-  const vulns = auditData.vulnerabilities || [];
+  const rawVulns = auditData.vulnerabilities || [];
   const crypto = auditData.weak_crypto || [];
-  const creds = auditData.credentials || [];
-  const configs = auditData.configs_and_dbs || [];
+  const rawCreds = auditData.credentials || [];
   const endpoints = auditData.network_endpoints || [];
-  const sharedLibs = auditData.shared_libraries || [];
+
+  // Filter 2.a: Only show 'Dangerous Function (sprintf)' and 'Hardcoded SSH Private Key'
+  const vulns = rawVulns.filter(
+    (item) => item.type === 'Dangerous Function (sprintf)' || item.type === 'Hardcoded SSH Private Key'
+  );
+
+  // Filter 2.c: Only keep 'Password / Shadow Hash File' rows
+  const creds = rawCreds.filter(
+    (item) => item.type === 'Password / Shadow Hash File'
+  );
+
+  // Paginated slices
+  const currentVulns = vulns.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const currentCrypto = crypto.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const currentCreds = creds.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  const currentEndpoints = endpoints.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const renderSeverityChip = (severity) => {
+    const s = (severity || '').toUpperCase();
+    let bg = '#DC2626';
+    if (s.includes('CRIT')) {
+      bg = '#DC2626';
+    } else if (s.includes('HIGH')) {
+      bg = '#EA580C';
+    } else if (s.includes('MED')) {
+      bg = '#D97706';
+    } else if (s.includes('LOW')) {
+      bg = '#2563EB';
+    } else {
+      bg = '#64748B';
+    }
+
+    return (
+      <Chip
+        size="small"
+        label={severity || 'UNKNOWN'}
+        sx={{
+          borderRadius: '6px',
+          fontSize: '11px',
+          fontWeight: 700,
+          bgcolor: bg,
+          color: '#FFFFFF',
+          minWidth: '68px',
+          textAlign: 'center',
+        }}
+      />
+    );
+  };
 
   return (
     <Paper
       variant="outlined"
       sx={{
-        p: 3.5,
+        p: { xs: 2.5, sm: 3.5 },
         borderRadius: '20px',
         backgroundColor: 'background.paper',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.02)',
@@ -89,17 +136,9 @@ export default function FirmAuditReportView({
               <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
                 Deep Vulnerability & Security Audit Findings
               </Typography>
-              {vulns.length > 0 && (
-                <Chip
-                  size="small"
-                  color="error"
-                  label={`${vulns.length} High-Risk Alert${vulns.length > 1 ? 's' : ''}`}
-                  sx={{ height: 22, fontSize: '11px', fontWeight: 700 }}
-                />
-              )}
             </Box>
             <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.3, fontSize: '12.5px' }}>
-              Categorized security triage: command injections, weak cryptography, default credentials, and system artifacts.
+              Prioritized security triage: dangerous memory functions, hardcoded keys, weak cryptography, and credential artifacts.
             </Typography>
           </Box>
         </Box>
@@ -131,33 +170,11 @@ export default function FirmAuditReportView({
         </Box>
       </Box>
 
-      {/* Metric Stat Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} sm={4} md={2}>
-          <MetricCard title="Vulnerabilities" count={vulns.length} color="#EF4444" icon={<BugReportIcon />} />
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <MetricCard title="Weak Crypto" count={crypto.length} color="#F59E0B" icon={<LockOpenIcon />} />
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <MetricCard title="Default Creds" count={creds.length} color="#DC2626" icon={<KeyIcon />} />
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <MetricCard title="Configs & DBs" count={configs.length} color="#2563EB" icon={<FolderIcon />} />
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <MetricCard title="Endpoints" count={endpoints.length} color="#10B981" icon={<LanguageIcon />} />
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <MetricCard title="Shared Libs" count={sharedLibs.length} color="#8B5CF6" icon={<DnsIcon />} />
-        </Grid>
-      </Grid>
-
-      {/* Modern Tab Bar */}
+      {/* Simplified, Modern Category Tabs with Integrated Count Badges */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2.5 }}>
         <Tabs
           value={activeTab}
-          onChange={(_, v) => setActiveTab(v)}
+          onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
           sx={{
@@ -165,16 +182,70 @@ export default function FirmAuditReportView({
               textTransform: 'none',
               fontWeight: 600,
               fontSize: '13.5px',
-              minHeight: '44px',
+              minHeight: '46px',
+              py: 1,
+              px: 2,
             },
           }}
         >
-          <Tab label={`Vulnerabilities (${vulns.length})`} />
-          <Tab label={`Weak Crypto (${crypto.length})`} />
-          <Tab label={`Default Credentials (${creds.length})`} />
-          <Tab label={`Configs & DBs (${configs.length})`} />
-          <Tab label={`Network Endpoints (${endpoints.length})`} />
-          <Tab label={`Shared Libraries (${sharedLibs.length})`} />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>Vulnerabilities</span>
+                <Chip
+                  size="small"
+                  label={vulns.length}
+                  color={vulns.length > 0 ? 'error' : 'default'}
+                  sx={{ height: 20, fontSize: '11px', fontWeight: 700, borderRadius: '6px' }}
+                />
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>Weak Crypto</span>
+                <Chip
+                  size="small"
+                  label={crypto.length}
+                  color={crypto.length > 0 ? 'warning' : 'default'}
+                  sx={{ height: 20, fontSize: '11px', fontWeight: 700, borderRadius: '6px' }}
+                />
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>Default Credentials</span>
+                <Chip
+                  size="small"
+                  label={creds.length}
+                  sx={{
+                    height: 20,
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    borderRadius: '6px',
+                    bgcolor: creds.length > 0 ? '#DC2626' : 'action.disabledBackground',
+                    color: creds.length > 0 ? '#FFFFFF' : 'text.disabled',
+                  }}
+                />
+              </Box>
+            }
+          />
+          <Tab
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span>Network Endpoints</span>
+                <Chip
+                  size="small"
+                  label={endpoints.length}
+                  color={endpoints.length > 0 ? 'info' : 'default'}
+                  sx={{ height: 20, fontSize: '11px', fontWeight: 700, borderRadius: '6px' }}
+                />
+              </Box>
+            }
+          />
         </Tabs>
       </Box>
 
@@ -182,10 +253,10 @@ export default function FirmAuditReportView({
       {activeTab === 0 && (
         <Box>
           {vulns.length === 0 ? (
-            <Box sx={{ py: 3, textAlign: 'center' }}>
+            <Box sx={{ py: 4, textAlign: 'center' }}>
               <CheckCircleOutlineIcon sx={{ fontSize: 36, color: 'success.main', mb: 1 }} />
               <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                No critical command injection patterns or dangerous memory API functions identified.
+                No dangerous sprintf functions or hardcoded SSH private keys identified.
               </Typography>
             </Box>
           ) : (
@@ -193,14 +264,146 @@ export default function FirmAuditReportView({
               <TableWrapper>
                 <thead>
                   <tr>
-                    <th style={{ width: '40%' }}>Target File Path</th>
-                    <th style={{ width: '22%' }}>Vulnerability Type</th>
-                    <th style={{ width: '12%' }}>Severity</th>
-                    <th style={{ width: '26%' }}>Technical Analysis</th>
+                    <th style={{ width: '52%' }}>Target File Path</th>
+                    <th style={{ width: '30%' }}>Vulnerability Type</th>
+                    <th style={{ width: '18%' }}>Severity</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vulns.map((item, idx) => (
+                  {currentVulns.map((item, idx) => (
+                    <tr key={idx}>
+                      <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
+                        {item.file}
+                      </td>
+                      <td>
+                        <Chip
+                          size="small"
+                          label={item.type}
+                          color={item.type === 'Hardcoded SSH Private Key' ? 'error' : 'warning'}
+                          variant="outlined"
+                          sx={{ borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}
+                        />
+                      </td>
+                      <td>
+                        {renderSeverityChip(item.severity || (item.type === 'Hardcoded SSH Private Key' ? 'CRITICAL' : 'HIGH'))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableWrapper>
+
+              <TablePagination
+                component="div"
+                count={vulns.length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[10, 25, 50]}
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  px: 1,
+                  py: 0.5,
+                  '& .MuiTablePagination-toolbar': { minHeight: '44px', fontSize: '12.5px' },
+                }}
+              />
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Tab 1: Weak Crypto */}
+      {activeTab === 1 && (
+        <Box>
+          {crypto.length === 0 ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <CheckCircleOutlineIcon sx={{ fontSize: 36, color: 'success.main', mb: 1 }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                No outdated or weak cryptographic algorithm implementations (DES, MD5, SHA1) detected.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ overflowX: 'auto' }}>
+              <TableWrapper>
+                <thead>
+                  <tr>
+                    <th style={{ width: '52%' }}>Target Binary / File</th>
+                    <th style={{ width: '30%' }}>Algorithm / Key Pattern</th>
+                    <th style={{ width: '18%' }}>Severity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentCrypto.map((item, idx) => (
+                    <tr key={idx}>
+                      <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
+                        {item.file}
+                      </td>
+                      <td>
+                        <Chip
+                          size="small"
+                          label={item.algorithm}
+                          color="warning"
+                          sx={{ borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}
+                        />
+                      </td>
+                      <td>
+                        {renderSeverityChip(item.severity || ((item.algorithm === 'DES' || item.algorithm === 'RC4' || item.algorithm === 'Predictable Key Pattern') ? 'HIGH' : 'MEDIUM'))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableWrapper>
+
+              <TablePagination
+                component="div"
+                count={crypto.length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[10, 25, 50]}
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  px: 1,
+                  py: 0.5,
+                  '& .MuiTablePagination-toolbar': { minHeight: '44px', fontSize: '12.5px' },
+                }}
+              />
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Tab 2: Default Credentials */}
+      {activeTab === 2 && (
+        <Box>
+          {creds.length === 0 ? (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <CheckCircleOutlineIcon sx={{ fontSize: 36, color: 'success.main', mb: 1 }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                No sensitive password or shadow hash files identified.
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ overflowX: 'auto' }}>
+              <TableWrapper>
+                <thead>
+                  <tr>
+                    <th style={{ width: '52%' }}>Target File Path</th>
+                    <th style={{ width: '30%' }}>Credential Classification</th>
+                    <th style={{ width: '18%' }}>Severity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentCreds.map((item, idx) => (
                     <tr key={idx}>
                       <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
                         {item.file}
@@ -215,202 +418,42 @@ export default function FirmAuditReportView({
                         />
                       </td>
                       <td>
-                        <Chip
-                          size="small"
-                          label={item.severity}
-                          sx={{
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            bgcolor: item.severity === 'CRITICAL' ? '#DC2626' : '#EA580C',
-                            color: '#FFFFFF',
-                          }}
-                        />
-                      </td>
-                      <td style={{ fontSize: '12.5px', color: 'text.secondary' }}>
-                        {item.detail}
+                        {renderSeverityChip(item.severity || 'CRITICAL')}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </TableWrapper>
+
+              <TablePagination
+                component="div"
+                count={creds.length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[10, 25, 50]}
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  px: 1,
+                  py: 0.5,
+                  '& .MuiTablePagination-toolbar': { minHeight: '44px', fontSize: '12.5px' },
+                }}
+              />
             </Box>
           )}
         </Box>
       )}
 
-      {/* Tab 1: Weak Crypto */}
-      {activeTab === 1 && (
-        <Box>
-          {crypto.length === 0 ? (
-            <Box sx={{ py: 3, textAlign: 'center' }}>
-              <CheckCircleOutlineIcon sx={{ fontSize: 36, color: 'success.main', mb: 1 }} />
-              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                No outdated or weak cryptographic algorithm implementations (DES, MD5, SHA1) detected.
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ overflowX: 'auto' }}>
-              <TableWrapper>
-                <thead>
-                  <tr>
-                    <th style={{ width: '45%' }}>Target Binary / File</th>
-                    <th style={{ width: '20%' }}>Algorithm / Key Pattern</th>
-                    <th style={{ width: '12%' }}>Severity</th>
-                    <th style={{ width: '23%' }}>Security Assessment</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {crypto.map((item, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
-                        {item.file}
-                      </td>
-                      <td>
-                        <Chip
-                          size="small"
-                          label={item.algorithm}
-                          color="warning"
-                          sx={{ borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}
-                        />
-                      </td>
-                      <td>
-                        <Chip
-                          size="small"
-                          label={item.severity}
-                          sx={{
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            bgcolor: item.severity === 'HIGH' ? '#EA580C' : '#CA8A04',
-                            color: '#FFFFFF',
-                          }}
-                        />
-                      </td>
-                      <td style={{ fontSize: '12.5px', color: 'text.secondary' }}>
-                        {item.detail}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </TableWrapper>
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {/* Tab 2: Default Credentials */}
-      {activeTab === 2 && (
-        <Box>
-          {creds.length === 0 ? (
-            <Box sx={{ py: 3, textAlign: 'center' }}>
-              <CheckCircleOutlineIcon sx={{ fontSize: 36, color: 'success.main', mb: 1 }} />
-              <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                No default credentials, shadow hashes, or password files identified.
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ overflowX: 'auto' }}>
-              <TableWrapper>
-                <thead>
-                  <tr>
-                    <th style={{ width: '45%' }}>Target File Path</th>
-                    <th style={{ width: '25%' }}>Credential Classification</th>
-                    <th style={{ width: '12%' }}>Severity</th>
-                    <th style={{ width: '18%' }}>Audit Context</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {creds.map((item, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
-                        {item.file}
-                      </td>
-                      <td>
-                        <Chip
-                          size="small"
-                          label={item.type}
-                          color={item.severity === 'CRITICAL' ? 'error' : 'warning'}
-                          variant="outlined"
-                          sx={{ borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}
-                        />
-                      </td>
-                      <td>
-                        <Chip
-                          size="small"
-                          label={item.severity}
-                          sx={{
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            bgcolor: item.severity === 'CRITICAL' ? '#DC2626' : (item.severity === 'HIGH' ? '#EA580C' : '#2563EB'),
-                            color: '#FFFFFF',
-                          }}
-                        />
-                      </td>
-                      <td style={{ fontSize: '12px', color: 'text.secondary' }}>
-                        {item.detail}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </TableWrapper>
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {/* Tab 3: Configs & DBs */}
+      {/* Tab 3: Network Endpoints */}
       {activeTab === 3 && (
         <Box>
-          {configs.length === 0 ? (
-            <Box sx={{ py: 3, textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', py: 2 }}>
-                No sensitive configuration or database files identified.
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ overflowX: 'auto' }}>
-              <TableWrapper>
-                <thead>
-                  <tr>
-                    <th style={{ width: '60%' }}>Detected Sensitive File Path</th>
-                    <th style={{ width: '25%' }}>Category</th>
-                    <th style={{ width: '15%' }}>Service Note</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {configs.map((item, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '12px', color: 'text.primary' }}>
-                        {item.file}
-                      </td>
-                      <td>
-                        <Chip
-                          size="small"
-                          label={item.category}
-                          color="primary"
-                          variant="outlined"
-                          sx={{ borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}
-                        />
-                      </td>
-                      <td style={{ fontSize: '12px', color: 'text.secondary' }}>
-                        {item.detail}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </TableWrapper>
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {/* Tab 4: Network Endpoints */}
-      {activeTab === 4 && (
-        <Box>
           {endpoints.length === 0 ? (
-            <Box sx={{ py: 3, textAlign: 'center' }}>
+            <Box sx={{ py: 4, textAlign: 'center' }}>
               <Typography variant="body2" sx={{ color: 'text.secondary', py: 2 }}>
                 No IP addresses, remote URLs, or email contacts detected.
               </Typography>
@@ -421,89 +464,62 @@ export default function FirmAuditReportView({
                 <thead>
                   <tr>
                     <th style={{ width: '8%' }}>#</th>
-                    <th style={{ width: '20%' }}>Endpoint Type</th>
-                    <th style={{ width: '52%' }}>Extracted Value</th>
-                    <th style={{ width: '20%' }}>Details</th>
+                    <th style={{ width: '22%' }}>Endpoint Type</th>
+                    <th style={{ width: '45%' }}>Extracted Value</th>
+                    <th style={{ width: '25%' }}>Details</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {endpoints.map((item, idx) => (
-                    <tr key={idx}>
-                      <td style={{ color: 'text.secondary', fontWeight: 600 }}>{idx + 1}</td>
-                      <td>
-                        <Chip
-                          size="small"
-                          label={item.type}
-                          color={item.type === 'IP Address' ? 'info' : (item.type === 'URL Endpoint' ? 'primary' : 'secondary')}
-                          sx={{ borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}
-                        />
-                      </td>
-                      <td style={{ fontFamily: 'monospace', wordBreak: 'break-all', fontWeight: 600, color: item.type === 'IP Address' ? '#0284C7' : (item.type === 'URL Endpoint' ? '#2563EB' : '#059669') }}>
-                        {item.type === 'URL Endpoint' ? (
-                          <a href={item.value} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
-                            {item.value}
-                          </a>
-                        ) : (
-                          item.value
-                        )}
-                      </td>
-                      <td style={{ fontSize: '12px', color: 'text.secondary' }}>
-                        {item.detail}
-                      </td>
-                    </tr>
-                  ))}
+                  {currentEndpoints.map((item, idx) => {
+                    const itemNumber = page * rowsPerPage + idx + 1;
+                    return (
+                      <tr key={idx}>
+                        <td style={{ color: 'text.secondary', fontWeight: 600 }}>{itemNumber}</td>
+                        <td>
+                          <Chip
+                            size="small"
+                            label={item.type}
+                            color={item.type === 'IP Address' ? 'info' : (item.type === 'URL Endpoint' ? 'primary' : 'secondary')}
+                            sx={{ borderRadius: '6px', fontSize: '11px', fontWeight: 600 }}
+                          />
+                        </td>
+                        <td style={{ fontFamily: 'monospace', wordBreak: 'break-all', fontWeight: 600, color: item.type === 'IP Address' ? '#0284C7' : (item.type === 'URL Endpoint' ? '#2563EB' : '#059669') }}>
+                          {item.type === 'URL Endpoint' ? (
+                            <a href={item.value} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                              {item.value}
+                            </a>
+                          ) : (
+                            item.value
+                          )}
+                        </td>
+                        <td style={{ fontSize: '12px', color: 'text.secondary' }}>
+                          {item.detail}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </TableWrapper>
-            </Box>
-          )}
-        </Box>
-      )}
 
-      {/* Tab 5: Shared Libraries */}
-      {activeTab === 5 && (
-        <Box>
-          {sharedLibs.length === 0 ? (
-            <Box sx={{ py: 3, textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary', py: 2 }}>
-                No dynamic library dependencies extracted from ELF binaries.
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ overflowX: 'auto' }}>
-              <TableWrapper>
-                <thead>
-                  <tr>
-                    <th style={{ width: '45%' }}>ELF Executable / Binary</th>
-                    <th style={{ width: '55%' }}>Linked Dynamic Libraries (DT_NEEDED)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sharedLibs.map((item, idx) => (
-                    <tr key={idx}>
-                      <td style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'text.primary' }}>
-                        {item.binary}
-                      </td>
-                      <td>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {item.libraries.map((lib, libIdx) => (
-                            <Chip
-                              key={libIdx}
-                              size="small"
-                              label={lib}
-                              variant="outlined"
-                              sx={{
-                                borderRadius: '6px',
-                                fontSize: '11px',
-                                fontFamily: 'monospace',
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </TableWrapper>
+              <TablePagination
+                component="div"
+                count={endpoints.length}
+                page={page}
+                onPageChange={(_, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(e) => {
+                  setRowsPerPage(parseInt(e.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[10, 25, 50]}
+                sx={{
+                  borderTop: '1px solid',
+                  borderColor: 'divider',
+                  px: 1,
+                  py: 0.5,
+                  '& .MuiTablePagination-toolbar': { minHeight: '44px', fontSize: '12.5px' },
+                }}
+              />
             </Box>
           )}
         </Box>

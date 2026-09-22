@@ -51,59 +51,7 @@ def toggle_target_power(state: int, power_thread=None):
             pass
 
 
-def evaluate_baud_quality(captured_text: str) -> float:
-    """
-    Evaluates the quality of captured UART data using generic heuristics:
-    1. Printable ASCII ratio (ASCII 32-126 plus \\r, \\n, \\t).
-    2. Word token formation (sequences of letters/numbers of length >= 2).
-    3. Framing error and null byte penalties.
-    4. Character diversity to reject uniform electrical line noise.
-    Works for any embedded architecture (U-Boot, Linux, FreeRTOS, ESP, UEFI, bare-metal).
-    """
-    if not captured_text:
-        return 0.0
-
-    # Strip nulls and surrounding control whitespace
-    clean_text = captured_text.strip("\x00\r\n\t ")
-    if len(clean_text) < 10:
-        return 0.0
-
-    total_len = len(clean_text)
-
-    # Count valid printable ASCII characters
-    printable_count = sum(1 for c in clean_text if (32 <= ord(c) <= 126) or c in "\r\n\t")
-    printable_ratio = printable_count / total_len
-
-    # Count null bytes (framing errors / break state)
-    null_count = clean_text.count("\x00")
-    null_ratio = null_count / total_len
-
-    # If printable ratio is below 60% or null ratio is excessively high, it is framing noise
-    if printable_ratio < 0.60 or null_ratio > 0.35 or printable_count < 15:
-        return 0.0
-
-    # Check character diversity (reject repetitive line noise like "~~~~~~~" or "UUUUUU")
-    unique_chars = len(set(clean_text))
-    if unique_chars < 5:
-        return 0.0
-
-    # Identify alphanumeric word tokens (length >= 2)
-    words = re.findall(r'[a-zA-Z0-9_-]{2,}', clean_text)
-    word_count = len(words)
-    word_chars = sum(len(w) for w in words)
-    word_ratio = word_chars / total_len if total_len > 0 else 0.0
-
-    # Baseline score based on valid character volume and purity
-    base_score = printable_count * (printable_ratio ** 2)
-
-    # Word factor bonus (generic for natural language / technical console output)
-    word_factor = 1.0 + min(2.0, (word_count * 0.05) + word_ratio)
-
-    # Penalty for nulls/glitches
-    null_penalty = max(0.0, 1.0 - (null_ratio * 2))
-
-    final_score = base_score * word_factor * null_penalty
-    return round(final_score, 2)
+from check_uart_console import evaluate_baud_quality, is_garbage_text
 
 
 # ---------------- CORE FUNCTION ---------------- #

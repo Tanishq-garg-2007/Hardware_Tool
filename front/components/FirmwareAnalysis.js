@@ -27,6 +27,7 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { useRouter } from 'next/router';
 
 // Modular Sub-components & Helpers
@@ -442,46 +443,52 @@ export default function FirmwareAnalysis({ onBack }) {
         </form>
       </Paper>
 
-      {/* Output Paths & File Manager Action Banners */}
+      {/* Unified Generated Artifacts & Output Paths Banner */}
       {(savedOutputPath || savedExtractedDir) && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Primary Saved Analysis Output Banner */}
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2.5,
+            borderRadius: '16px',
+            backgroundColor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : '#F8FAFC'),
+            borderColor: (theme) => (theme.palette.mode === 'dark' ? '#1E293B' : '#E2E8F0'),
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+          }}
+        >
+          {/* Item 1: Saved Output File / Log */}
           {savedOutputPath && (
-            <Paper
-              variant="outlined"
+            <Box
               sx={{
-                p: 2.5,
-                borderRadius: '16px',
-                backgroundColor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(15, 23, 42, 0.8)' : '#F8FAFC'),
-                borderColor: (theme) => (theme.palette.mode === 'dark' ? '#1E293B' : '#E2E8F0'),
                 display: 'flex',
                 flexDirection: { xs: 'column', md: 'row' },
                 alignItems: { xs: 'flex-start', md: 'center' },
                 justifyContent: 'space-between',
-                gap: 2,
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+                gap: 1.5,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0, flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 44,
-                    height: 44,
-                    borderRadius: '12px',
+                    width: 40,
+                    height: 40,
+                    borderRadius: '10px',
                     bgcolor: 'primary.main',
                     color: 'primary.contrastText',
                     flexShrink: 0,
-                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
                   }}
                 >
-                  <FolderOpenIcon sx={{ fontSize: 24 }} />
+                  <DescriptionIcon sx={{ fontSize: 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                    <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'primary.main' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3, flexWrap: 'wrap' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'primary.main', fontSize: '11px' }}>
                       Saved Output Location
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11px' }}>
@@ -493,13 +500,13 @@ export default function FirmwareAnalysis({ onBack }) {
                       onClick={() => copySavedPathToClipboard(savedOutputPath)}
                       sx={{
                         fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         fontWeight: 500,
                         color: 'text.primary',
                         bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#0F172A' : '#FFFFFF'),
-                        px: 1.5,
-                        py: 0.75,
-                        borderRadius: '8px',
+                        px: 1.25,
+                        py: 0.6,
+                        borderRadius: '6px',
                         border: '1px solid',
                         borderColor: (theme) => (theme.palette.mode === 'dark' ? '#334155' : '#CBD5E1'),
                         cursor: 'pointer',
@@ -521,18 +528,20 @@ export default function FirmwareAnalysis({ onBack }) {
                 </Box>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexShrink: 0, width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-end', md: 'flex-start' } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-end', md: 'flex-start' } }}>
                 <Tooltip title={pathCopied ? 'Copied to clipboard!' : 'Copy full path'}>
                   <Button
                     variant="outlined"
                     size="small"
                     onClick={() => copySavedPathToClipboard(savedOutputPath)}
-                    startIcon={pathCopied ? <CheckCircleOutlineIcon color="success" /> : <ContentCopyIcon />}
+                    startIcon={pathCopied ? <CheckCircleOutlineIcon color="success" sx={{ fontSize: 16 }} /> : <ContentCopyIcon sx={{ fontSize: 15 }} />}
                     sx={{
-                      borderRadius: '10px',
+                      borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 600,
-                      fontSize: '12px',
+                      fontSize: '11.5px',
+                      height: 32,
+                      px: 1.3,
                       borderColor: (theme) => (theme.palette.mode === 'dark' ? '#475569' : '#CBD5E1'),
                     }}
                   >
@@ -548,13 +557,15 @@ export default function FirmwareAnalysis({ onBack }) {
                       size="small"
                       disabled={openFolderLoading}
                       onClick={() => handleOpenFolder(savedOutputPath)}
-                      startIcon={openFolderLoading ? <CircularProgress size={16} color="inherit" /> : <FolderOpenIcon />}
+                      startIcon={openFolderLoading ? <CircularProgress size={14} color="inherit" /> : <FolderOpenIcon sx={{ fontSize: 16 }} />}
                       sx={{
-                        borderRadius: '10px',
+                        borderRadius: '8px',
                         textTransform: 'none',
                         fontWeight: 600,
-                        fontSize: '12px',
-                        boxShadow: '0 4px 14px rgba(25, 118, 210, 0.35)',
+                        fontSize: '11.5px',
+                        height: 32,
+                        px: 1.3,
+                        boxShadow: '0 2px 8px rgba(25, 118, 210, 0.3)',
                       }}
                     >
                       {openFolderLoading ? 'Opening...' : 'Open in File Manager'}
@@ -562,46 +573,45 @@ export default function FirmwareAnalysis({ onBack }) {
                   </span>
                 </Tooltip>
               </Box>
-            </Paper>
+            </Box>
           )}
 
-          {/* Extracted Files Folder Banner */}
+          {/* Subtle Divider between both paths when both exist and are distinct */}
+          {savedOutputPath && savedExtractedDir && savedExtractedDir !== savedOutputPath && (
+            <Divider sx={{ borderColor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)') }} />
+          )}
+
+          {/* Item 2: Extracted Directory */}
           {savedExtractedDir && savedExtractedDir !== savedOutputPath && (
-            <Paper
-              variant="outlined"
+            <Box
               sx={{
-                p: 2.5,
-                borderRadius: '16px',
-                backgroundColor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.7)' : '#F8FAFC'),
-                borderColor: (theme) => (theme.palette.mode === 'dark' ? '#334155' : '#E2E8F0'),
                 display: 'flex',
                 flexDirection: { xs: 'column', md: 'row' },
                 alignItems: { xs: 'flex-start', md: 'center' },
                 justifyContent: 'space-between',
-                gap: 2,
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.04)',
+                gap: 1.5,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.75, minWidth: 0, flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
                 <Box
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 44,
-                    height: 44,
-                    borderRadius: '12px',
+                    width: 40,
+                    height: 40,
+                    borderRadius: '10px',
                     bgcolor: 'info.main',
                     color: 'info.contrastText',
                     flexShrink: 0,
-                    boxShadow: '0 4px 12px rgba(2, 136, 209, 0.3)',
+                    boxShadow: '0 2px 8px rgba(2, 136, 209, 0.25)',
                   }}
                 >
-                  <FolderOpenIcon sx={{ fontSize: 24 }} />
+                  <FolderOpenIcon sx={{ fontSize: 22 }} />
                 </Box>
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
-                    <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'info.main' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.3, flexWrap: 'wrap' }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'info.main', fontSize: '11px' }}>
                       Extracted Files Directory
                     </Typography>
                     <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '11px' }}>
@@ -613,13 +623,13 @@ export default function FirmwareAnalysis({ onBack }) {
                       onClick={() => copyExtractedDirToClipboard(savedExtractedDir)}
                       sx={{
                         fontFamily: "'JetBrains Mono', 'Fira Code', 'Consolas', monospace",
-                        fontSize: '13px',
+                        fontSize: '12.5px',
                         fontWeight: 500,
                         color: 'text.primary',
                         bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#0F172A' : '#FFFFFF'),
-                        px: 1.5,
-                        py: 0.75,
-                        borderRadius: '8px',
+                        px: 1.25,
+                        py: 0.6,
+                        borderRadius: '6px',
                         border: '1px solid',
                         borderColor: (theme) => (theme.palette.mode === 'dark' ? '#334155' : '#CBD5E1'),
                         cursor: 'pointer',
@@ -641,18 +651,20 @@ export default function FirmwareAnalysis({ onBack }) {
                 </Box>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexShrink: 0, width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-end', md: 'flex-start' } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, width: { xs: '100%', md: 'auto' }, justifyContent: { xs: 'flex-end', md: 'flex-start' } }}>
                 <Tooltip title={extractedDirCopied ? 'Copied to clipboard!' : 'Copy full path'}>
                   <Button
                     variant="outlined"
                     size="small"
                     onClick={() => copyExtractedDirToClipboard(savedExtractedDir)}
-                    startIcon={extractedDirCopied ? <CheckCircleOutlineIcon color="success" /> : <ContentCopyIcon />}
+                    startIcon={extractedDirCopied ? <CheckCircleOutlineIcon color="success" sx={{ fontSize: 16 }} /> : <ContentCopyIcon sx={{ fontSize: 15 }} />}
                     sx={{
-                      borderRadius: '10px',
+                      borderRadius: '8px',
                       textTransform: 'none',
                       fontWeight: 600,
-                      fontSize: '12px',
+                      fontSize: '11.5px',
+                      height: 32,
+                      px: 1.3,
                       borderColor: (theme) => (theme.palette.mode === 'dark' ? '#475569' : '#CBD5E1'),
                     }}
                   >
@@ -668,13 +680,15 @@ export default function FirmwareAnalysis({ onBack }) {
                       size="small"
                       disabled={openFolderLoading}
                       onClick={() => handleOpenFolder(savedExtractedDir)}
-                      startIcon={openFolderLoading ? <CircularProgress size={16} color="inherit" /> : <FolderOpenIcon />}
+                      startIcon={openFolderLoading ? <CircularProgress size={14} color="inherit" /> : <FolderOpenIcon sx={{ fontSize: 16 }} />}
                       sx={{
-                        borderRadius: '10px',
+                        borderRadius: '8px',
                         textTransform: 'none',
                         fontWeight: 600,
-                        fontSize: '12px',
-                        boxShadow: '0 4px 14px rgba(2, 136, 209, 0.35)',
+                        fontSize: '11.5px',
+                        height: 32,
+                        px: 1.3,
+                        boxShadow: '0 2px 8px rgba(2, 136, 209, 0.3)',
                       }}
                     >
                       {openFolderLoading ? 'Opening...' : 'Open in File Manager'}
@@ -682,9 +696,9 @@ export default function FirmwareAnalysis({ onBack }) {
                   </span>
                 </Tooltip>
               </Box>
-            </Paper>
+            </Box>
           )}
-        </Box>
+        </Paper>
       )}
 
       {/* Modular Subcomponent: Entropy Visualization & Results */}

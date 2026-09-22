@@ -167,6 +167,8 @@ def compute_vulnerabilities(filename: str = "output.txt") -> List[Dict[str, Any]
     return results
 
 
+# Backward-compatibility alias
+compute_vulnerabilities1 = compute_vulnerabilities
 if __name__ == "__main__":
     import sys
     test_cves = ["CVE-2019-14193", "CVE-2019-14194", "CVE-2019-14195"]

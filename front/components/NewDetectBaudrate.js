@@ -43,6 +43,9 @@ const NewDetectBaudrate = ({ setReport, onBack }) => {
     setHasRun(false);
     setBestBaud(null);
     setError(null);
+    if (setReport) {
+      setReport(null);
+    }
 
     try {
       const response = await fetch(

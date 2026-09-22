@@ -142,7 +142,7 @@ const VoltageGlitcher = ({ onBack }) => {
       </Paper>
 
       {/* Frequency & Channel */}
-     {/* <Grid container spacing={2}>
+      {/* <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
           <Paper variant="outlined" sx={{ p: 2.5, borderRadius: '16px', backgroundColor: 'background.default', height: '100%' }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -223,7 +223,7 @@ const VoltageGlitcher = ({ onBack }) => {
           onClick={powerOnTimeHandler}
           sx={{ mt: 2, borderRadius: '10px', fontWeight: 600 }}
         >
-          Apply Custom Pulse Timing
+          Pulse Duration
         </Button>
       </Paper>
 

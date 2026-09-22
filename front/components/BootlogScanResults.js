@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -12,6 +12,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Divider,
   Button,
   Tooltip,
@@ -236,110 +237,7 @@ export default function BootlogScanResults({
                     </Typography>
 
                     {fileItem.matches && fileItem.matches.length > 0 ? (
-                      <TableContainer
-                        component={Paper}
-                        variant="outlined"
-                        sx={{
-                          borderRadius: "12px",
-                          maxHeight: "520px",
-                          overflowX: "auto",
-                          borderColor: "divider",
-                        }}
-                      >
-                        <Table size="small" stickyHeader>
-                          <TableHead>
-                            <TableRow>
-                              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "150px" }}>CVE ID</TableCell>
-                              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "120px" }}>Severity (CVSS)</TableCell>
-                              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "100px" }}>CVSS Score</TableCell>
-                              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "130px" }}>EPSS Threat Prob.</TableCell>
-                              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "130px" }}>Matched Product</TableCell>
-                              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "280px" }}>Description</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {fileItem.matches.map((cve, cveIdx) => {
-                              const scoreVal = cve.base_score ?? cve.baseScore;
-                              const cveId = cve.cve_id || cve.id || "-";
-                              const nvdUrl = cveId.startsWith("CVE-")
-                                ? `https://nvd.nist.gov/vuln/detail/${cveId}`
-                                : null;
-
-                              return (
-                                <TableRow key={cveIdx} hover>
-                                  <TableCell sx={{ fontWeight: 600, fontFamily: "monospace" }}>
-                                    {nvdUrl ? (
-                                      <Tooltip title={`Open ${cveId} advisory on NIST NVD`} arrow>
-                                        <Link
-                                          href={nvdUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          underline="hover"
-                                          sx={{
-                                            color: "primary.main",
-                                            display: "inline-flex",
-                                            alignItems: "center",
-                                            gap: 0.5,
-                                            fontWeight: 700,
-                                          }}
-                                        >
-                                          {cveId}
-                                          <OpenInNewIcon sx={{ fontSize: "13px" }} />
-                                        </Link>
-                                      </Tooltip>
-                                    ) : (
-                                      cveId
-                                    )}
-                                  </TableCell>
-
-                                  <TableCell>{getSeverityChip(cve.severity, scoreVal)}</TableCell>
-
-                                  <TableCell sx={{ fontWeight: 700 }}>
-                                    {scoreVal != null && scoreVal !== "N/A"
-                                      ? typeof scoreVal === "number"
-                                        ? scoreVal.toFixed(1)
-                                        : scoreVal
-                                      : cve.severity || "-"}
-                                  </TableCell>
-
-                                  <TableCell>
-                                    {cve.epss_score != null ? (
-                                      <Box>
-                                        <Typography
-                                          variant="body2"
-                                          sx={{
-                                            fontWeight: 700,
-                                            color: cve.epss_score >= 0.3 ? "error.main" : "text.primary",
-                                          }}
-                                        >
-                                          {(cve.epss_score * 100).toFixed(1)}%
-                                        </Typography>
-                                        {cve.epss_percentile != null && (
-                                          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "10px", display: "block" }}>
-                                            {Math.round(cve.epss_percentile * 100)}th %tile
-                                          </Typography>
-                                        )}
-                                      </Box>
-                                    ) : (
-                                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                                        N/A
-                                      </Typography>
-                                    )}
-                                  </TableCell>
-
-                                  <TableCell sx={{ color: "text.secondary", fontSize: "13px" }}>
-                                    {cve.matched_product || "-"}
-                                  </TableCell>
-
-                                  <TableCell sx={{ color: "text.secondary", fontSize: "13px" }}>
-                                    {cve.description || "-"}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                      <CveTable matches={fileItem.matches} getSeverityChip={getSeverityChip} />
                     ) : (
                       <Alert severity="success" icon={<CheckCircleOutlineIcon fontSize="inherit" />} sx={{ borderRadius: "12px" }}>
                         No matching CVE vulnerabilities detected for this bootlog file.
@@ -402,5 +300,144 @@ function InfoGridItem({ label, value }) {
         </Typography>
       </Box>
     </Grid>
+  );
+}
+
+function CveTable({ matches, getSeverityChip }) {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (_, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const displayedMatches = matches.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  return (
+    <Box>
+      <TableContainer
+        component={Paper}
+        variant="outlined"
+        sx={{
+          borderRadius: "12px",
+          maxHeight: "520px",
+          overflowX: "auto",
+          borderColor: "divider",
+        }}
+      >
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "150px" }}>CVE ID</TableCell>
+              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "120px" }}>Severity (CVSS)</TableCell>
+              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "100px" }}>CVSS Score</TableCell>
+              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "130px" }}>EPSS Threat Prob.</TableCell>
+              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "130px" }}>Matched Product</TableCell>
+              <TableCell sx={{ fontWeight: 700, backgroundColor: "background.paper", minWidth: "280px" }}>Description</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {displayedMatches.map((cve, cveIdx) => {
+              const scoreVal = cve.base_score ?? cve.baseScore;
+              const cveId = cve.cve_id || cve.id || "-";
+              const nvdUrl = cveId.startsWith("CVE-")
+                ? `https://nvd.nist.gov/vuln/detail/${cveId}`
+                : null;
+
+              return (
+                <TableRow key={cve.cve_id || cve.id || cveIdx} hover>
+                  <TableCell sx={{ fontWeight: 600, fontFamily: "monospace" }}>
+                    {nvdUrl ? (
+                      <Tooltip title={`Open ${cveId} advisory on NIST NVD`} arrow>
+                        <Link
+                          href={nvdUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          underline="hover"
+                          sx={{
+                            color: "primary.main",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {cveId}
+                          <OpenInNewIcon sx={{ fontSize: "13px" }} />
+                        </Link>
+                      </Tooltip>
+                    ) : (
+                      cveId
+                    )}
+                  </TableCell>
+
+                  <TableCell>{getSeverityChip(cve.severity, scoreVal)}</TableCell>
+
+                  <TableCell sx={{ fontWeight: 700 }}>
+                    {scoreVal != null && scoreVal !== "N/A"
+                      ? typeof scoreVal === "number"
+                        ? scoreVal.toFixed(1)
+                        : scoreVal
+                      : cve.severity || "-"}
+                  </TableCell>
+
+                  <TableCell>
+                    {cve.epss_score != null ? (
+                      <Box>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 700,
+                            color: cve.epss_score >= 0.3 ? "error.main" : "text.primary",
+                          }}
+                        >
+                          {(cve.epss_score * 100).toFixed(1)}%
+                        </Typography>
+                        {cve.epss_percentile != null && (
+                          <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "10px", display: "block" }}>
+                            {Math.round(cve.epss_percentile * 100)}th %tile
+                          </Typography>
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        N/A
+                      </Typography>
+                    )}
+                  </TableCell>
+
+                  <TableCell sx={{ color: "text.secondary", fontSize: "13px" }}>
+                    {cve.matched_product || "-"}
+                  </TableCell>
+
+                  <TableCell sx={{ color: "text.secondary", fontSize: "13px" }}>
+                    {cve.description || "-"}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        component="div"
+        count={matches.length}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[10, 25, 50, 100]}
+        sx={{
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          mt: 0.5,
+        }}
+      />
+    </Box>
   );
 }

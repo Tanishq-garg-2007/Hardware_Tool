@@ -48,24 +48,7 @@ ENTROPY_GRAPH_DIR.mkdir(parents=True, exist_ok=True)
 FIRMAUDIT_DIR = PROJECT_ROOT / "FirmAudit"
 FIRMAUDIT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Ensure legacy alias exists in Backend dir pointing to data/entropy_graph and FirmAudit
-try:
-    backend_entropy_alias = BACKEND_DIR / "entropy_graph"
-    if backend_entropy_alias.is_symlink() or backend_entropy_alias.exists():
-        if backend_entropy_alias.is_symlink() and backend_entropy_alias.resolve() != ENTROPY_GRAPH_DIR.resolve():
-            backend_entropy_alias.unlink()
-            backend_entropy_alias.symlink_to(ENTROPY_GRAPH_DIR, target_is_directory=True)
-    elif not backend_entropy_alias.exists():
-        backend_entropy_alias.symlink_to(ENTROPY_GRAPH_DIR, target_is_directory=True)
-except Exception:
-    pass
 
-try:
-    backend_firmaudit_alias = BACKEND_DIR / "FirmAudit"
-    if not backend_firmaudit_alias.exists():
-        backend_firmaudit_alias.symlink_to(FIRMAUDIT_DIR, target_is_directory=True)
-except Exception:
-    pass
 
 import helper
 import detect_baud, check_uart_console, check_default_key, capture_uart_boot
@@ -86,8 +69,7 @@ from ChatBot import generate_answer,reindex_database
 from assistant_rag import ask_assistant, index_guide
 from BootLog_Summary import summarize_boot_log
 from Agent_Analyze import run
-from EPSS_CVSS_Extract import compute_vulnerabilities
-from EPSS_CVSS_Extract_new import compute_vulnerabilities1
+from EPSS_CVSS_Extract import compute_vulnerabilities, compute_vulnerabilities1
 from new_capture_uart_boot import new_capture_boot_output
 from new_detect_baud import new_run_baud_detection
 from Hardcoded_Password import FirmwareScanner
@@ -204,9 +186,34 @@ async def upload_file(file: UploadFile = File(...), script: str = Form("binwalk"
     file_path = str(EXTRACTED_FILES_DIR / filename)
 
     # Save the uploaded file temporarily for analysis
-    contents = await file.read()
-    with open(file_path, "wb") as f:
-        f.write(contents)
+    try:
+        contents = await file.read()
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                try:
+                    subprocess.run(["sudo", "-n", "rm", "-f", file_path], check=False)
+                except Exception:
+                    pass
+
+        with open(file_path, "wb") as f:
+            f.write(contents)
+    except Exception as e:
+        # Fallback permission fix if previous file was locked by root or has restrictive permissions
+        try:
+            current_uid = os.getuid()
+            current_gid = os.getgid()
+            subprocess.run(["sudo", "-n", "chown", f"{current_uid}:{current_gid}", file_path], check=False)
+            subprocess.run(["sudo", "-n", "rm", "-f", file_path], check=False)
+            with open(file_path, "wb") as f:
+                f.write(contents)
+        except Exception as retry_err:
+            print(f"[ERROR] Failed to save uploaded firmware file {file_path}: {retry_err}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Permission or storage error saving uploaded file: {str(retry_err)}"}
+            )
 
     try:
         firmaudit_script = os.path.join(os.path.dirname(__file__) or ".", "FirmAudit.py")
@@ -430,7 +437,11 @@ async def upload_file(file: UploadFile = File(...), script: str = Form("binwalk"
                 os.remove(file_path)
                 print(f"[INFO] Removed uploaded file from temp storage: {file_path}")
             except Exception as e:
-                print(f"[WARNING] Failed to remove uploaded file {file_path}: {e}")
+                try:
+                    subprocess.run(["sudo", "-n", "rm", "-f", file_path], check=False)
+                    print(f"[INFO] Removed uploaded file with elevated fallback: {file_path}")
+                except Exception:
+                    print(f"[WARNING] Failed to remove uploaded file {file_path}: {e}")
 
 @app.get("/latest-entropy-graph/")
 async def get_latest_entropy_graph():
@@ -609,6 +620,10 @@ async def new_switch_power(flag: int):
         else:
             GPIO.output(OCTOCOUPLER_POWER_PIN, GPIO.LOW)
             msg = "Octocoupler power set to ON"
+
+        # Also synchronize Relay power state
+        if power_thread is not None and hasattr(power_thread, "set_state"):
+            power_thread.set_state(flag)
 
         return {"status": "ok", "message": msg, "flag": flag}
     except Exception as e:
@@ -1442,6 +1457,15 @@ def extract_firmware(data: FlashRequest):
         )
 
         print("Run complete")
+
+        # Ensure extracted dump file is owned by current user and writable
+        try:
+            current_uid = os.getuid()
+            current_gid = os.getgid()
+            subprocess.run(["sudo", "-n", "chown", f"{current_uid}:{current_gid}", output_path], check=False)
+            subprocess.run(["chmod", "664", output_path], check=False)
+        except Exception as pe:
+            print(f"[Warning] could not adjust ownership of {output_path}: {pe}")
 
         return {
             "success": True,

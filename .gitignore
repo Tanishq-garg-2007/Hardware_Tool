@@ -132,6 +132,8 @@ Backend/FirmAudit/
 # Runtime Logs & Transient Outputs
 # ==========================================
 *.log
+uart_logs/*
+!uart_logs/.gitkeep
 backend/uart_logs/*
 !backend/uart_logs/.gitkeep
 Backend/uart_logs/*
